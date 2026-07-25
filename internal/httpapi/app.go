@@ -37,6 +37,7 @@ type TemplateData struct {
 	AdminRole  string
 	AdminUser  string
 	CSRFToken  string
+	AppVersion string
 	Data       any
 }
 
@@ -532,6 +533,7 @@ func (a *App) render(w http.ResponseWriter, r *http.Request, tmplName string, da
 		data.AdminRole = "owner"
 	}
 	data.CSRFToken = middleware.EnsureCSRFToken(w, r)
+	data.AppVersion = core.Version
 
 	t, err := a.getTemplate(tmplName)
 	if err != nil {
@@ -562,6 +564,7 @@ func (a *App) renderStandalone(w http.ResponseWriter, r *http.Request, tmplName 
 		_ = sess.Save(r, w)
 	}
 	data.CSRFToken = middleware.EnsureCSRFToken(w, r)
+	data.AppVersion = core.Version
 
 	tfs := web.TemplatesFS()
 	var files []string

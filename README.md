@@ -4,6 +4,9 @@ Panel manajemen MikroTik Hotspot dan PPPoE berbasis web. MikVoc menyediakan peng
 
 Developed by **SantaiNetwork**.
 
+[![CI](https://github.com/Santainetwork/mikvoc/actions/workflows/ci.yml/badge.svg)](https://github.com/Santainetwork/mikvoc/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Santainetwork/mikvoc)](https://github.com/Santainetwork/mikvoc/releases)
+
 ## Fitur
 
 - Multi-router dengan sesi router aktif per browser.
@@ -28,6 +31,8 @@ Developed by **SantaiNetwork**.
 
 ## Instalasi
 
+Unduh binary terbaru dari halaman [Releases](https://github.com/Santainetwork/mikvoc/releases), atau build dari source:
+
 ```bash
 git clone https://github.com/Santainetwork/mikvoc.git
 cd mikvoc
@@ -40,6 +45,12 @@ Masukkan hasil perintah terakhir sebagai `MIKVOC_SECRET` di `.env`, lalu build d
 ```bash
 make build
 ./mikvoc
+```
+
+Cek versi binary:
+
+```bash
+./mikvoc --version
 ```
 
 Buka `http://localhost:8080`.

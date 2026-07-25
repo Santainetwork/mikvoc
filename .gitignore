@@ -2,7 +2,7 @@
 .env
 
 # Binary
-mikvoc
+/mikvoc
 
 # Database
 mikvoc.db
