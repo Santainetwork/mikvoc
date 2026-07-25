@@ -1,0 +1,46 @@
+{{define "head"}}
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{{.Title}}</title>
+<meta name="description" content="MikVoc — Panel Manajemen Hotspot Mikrotik" />
+<meta name="application-name" content="MikVoc" />
+<meta name="author" content="SantaiNetwork" />
+<meta name="copyright" content="Copyright (c) 2026 SantaiNetwork" />
+<meta name="keywords" content="MikVoc, MikroTik, hotspot, voucher, PPPoE, SantaiNetwork" />
+<meta name="csrf-token" content="{{.CSRFToken}}" />
+<script>window.__MIKVOC_CSRF__=(document.querySelector('meta[name="csrf-token"]')||{}).content||'';</script>
+<script>
+(function(){
+  function t(){return window.__MIKVOC_CSRF__||((document.querySelector('meta[name="csrf-token"]')||{}).content)||'';}
+  function inj(f){
+    if(!f||(f.tagName||'').toLowerCase()!=='form')return;
+    var m=(f.getAttribute('method')||'get').toLowerCase();
+    if(m!=='post'&&m!=='put'&&m!=='patch'&&m!=='delete')return;
+    var tok=t(); if(!tok)return;
+    var i=f.querySelector('input[name="csrf_token"]');
+    if(!i){i=document.createElement('input');i.type='hidden';i.name='csrf_token';f.appendChild(i);}
+    i.value=tok;
+  }
+  document.addEventListener('submit',function(e){if(e.target&&e.target.tagName==='FORM')inj(e.target);},true);
+  if(typeof HTMLFormElement!=='undefined'&&HTMLFormElement.prototype){
+    var ns=HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit=function(){inj(this);return ns.call(this);};
+  }
+})();
+</script>
+<link rel="preload" href="/static/fonts/MaterialSymbolsOutlined.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/static/fonts/Inter-Regular.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/static/fonts/Inter-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/static/css/app.css" as="style" />
+<link rel="stylesheet" href="/static/css/app.css" />
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem("theme");
+      if (t === "dark" || (t === null && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+        document.documentElement.classList.add("dark");
+      }
+    } catch (e) {}
+  })();
+</script>
+{{end}}

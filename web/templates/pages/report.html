@@ -1,0 +1,193 @@
+{{template "layout" .}}
+{{define "content"}}
+
+<div class="mb-6 flex items-center justify-between flex-wrap gap-3">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Laporan Penjualan</h1>
+    <p class="text-muted-foreground text-sm mt-0.5">Rekap pendapatan berdasarkan generate voucher</p>
+  </div>
+  <div class="flex gap-2 no-print">
+    <form method="POST" action="/report/purge-scripts" onsubmit="return confirm('Hapus script laporan penjualan di router? Data di database tetap aman.')">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <button type="submit" class="btn btn-outline btn-md">
+        <span class="material-symbols-outlined text-[16px]">cleaning_services</span>Bersihkan script di router
+      </button>
+    </form>
+    <button onclick="window.print()" class="btn btn-primary btn-md">
+      <span class="material-symbols-outlined text-[16px]">print</span>Cetak Laporan
+    </button>
+  </div>
+</div>
+
+{{with .Data}}
+<!-- Filter Bar -->
+<div class="card p-4 mb-6 no-print">
+  <form method="GET" action="/report" class="space-y-4">
+    <div class="flex flex-wrap gap-2">
+      {{$profileParam := ""}}{{if .Profile}}{{$profileParam = (printf "&profile=%s" (urlquery .Profile))}}{{end}}
+      <a href="/report?preset=today{{$profileParam}}" class="btn btn-outline btn-sm {{if eq .Preset "today"}}btn-primary{{end}}">Hari Ini</a>
+      <a href="/report?preset=yesterday{{$profileParam}}" class="btn btn-outline btn-sm {{if eq .Preset "yesterday"}}btn-primary{{end}}">Kemarin</a>
+      <a href="/report?preset=last_7{{$profileParam}}" class="btn btn-outline btn-sm {{if eq .Preset "last_7"}}btn-primary{{end}}">7 Hari</a>
+      <a href="/report?preset=this_month{{$profileParam}}" class="btn btn-outline btn-sm {{if eq .Preset "this_month"}}btn-primary{{end}}">Bulan Ini</a>
+      <a href="/report?preset=last_month{{$profileParam}}" class="btn btn-outline btn-sm {{if eq .Preset "last_month"}}btn-primary{{end}}">Bulan Lalu</a>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+      <div class="space-y-1.5">
+        <label class="label">Dari Tanggal</label>
+        <input type="date" name="from" value="{{.From}}" class="input"/>
+      </div>
+      <div class="space-y-1.5">
+        <label class="label">Sampai Tanggal</label>
+        <input type="date" name="to" value="{{.To}}" class="input"/>
+      </div>
+      <div class="space-y-1.5">
+        <label class="label">Profile</label>
+        <select name="profile" class="input">
+          <option value="">Semua Profile</option>
+          {{range .ProfileOptions}}
+          <option value="{{.}}" {{if eq $.Data.Profile .}}selected{{end}}>{{.}}</option>
+          {{end}}
+        </select>
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="btn btn-primary btn-md flex-1">
+          <span class="material-symbols-outlined text-[16px]">filter_list</span>Filter
+        </button>
+        <a href="/report" class="btn btn-outline btn-md">Reset</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="lg:col-span-2 card border-success/30 p-5">
+    <div class="flex items-center gap-3 mb-1">
+      <div class="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center">
+        <span class="material-symbols-outlined text-success text-[18px]">payments</span>
+      </div>
+      <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Pendapatan</span>
+    </div>
+    <div class="text-3xl font-bold mt-2">{{.TotalRevenueLabel}}</div>
+    <div class="text-xs text-muted-foreground mt-1">{{.From}} s/d {{.To}}</div>
+  </div>
+  <div class="card p-5">
+    <div class="flex items-center gap-3 mb-1">
+      <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+        <span class="material-symbols-outlined text-primary text-[18px]">confirmation_number</span>
+      </div>
+      <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Voucher</span>
+    </div>
+    <div class="text-3xl font-bold mt-2">{{.TotalCount}}</div>
+    <div class="text-xs text-muted-foreground mt-1">Terjual</div>
+  </div>
+  <div class="card p-5">
+    <div class="flex items-center gap-3 mb-1">
+      <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+        <span class="material-symbols-outlined text-primary text-[18px]">trending_up</span>
+      </div>
+      <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rata-rata/Hari</span>
+    </div>
+    <div class="text-3xl font-bold mt-2">{{.AverageDailyLabel}}</div>
+    <div class="text-xs text-muted-foreground mt-1">Per hari</div>
+  </div>
+</div>
+
+<!-- Daily Summary Table -->
+{{if .Daily}}
+<div class="card mb-6 overflow-hidden">
+  <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+    <span class="material-symbols-outlined text-primary text-[18px]">calendar_month</span>
+    <h3 class="text-sm font-semibold">Rekapitulasi Harian</h3>
+  </div>
+  <div class="overflow-x-auto scrollbar-thin">
+    <table class="table">
+      <thead><tr>
+        <th>Tanggal</th>
+        <th class="text-right">Voucher</th>
+        <th class="text-right">Pendapatan</th>
+      </tr></thead>
+      <tbody>
+        {{range .Daily}}
+        <tr>
+          <td class="font-medium">{{.Day}}</td>
+          <td class="text-right">{{.Count}}</td>
+          <td class="text-right font-semibold text-success">{{.TotalLabel}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{end}}
+
+{{if .ProfileSummaries}}
+<div class="card mb-6 overflow-hidden">
+  <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+    <span class="material-symbols-outlined text-primary text-[18px]">dataset</span>
+    <h3 class="text-sm font-semibold">Ringkasan Profil</h3>
+  </div>
+  <div class="overflow-x-auto scrollbar-thin">
+    <table class="table">
+      <thead><tr>
+        <th>Profile</th>
+        <th class="text-right">Voucher</th>
+        <th class="text-right">Pendapatan</th>
+      </tr></thead>
+      <tbody>
+        {{range .ProfileSummaries}}
+        <tr>
+          <td class="font-medium">{{.Profile}}</td>
+          <td class="text-right">{{.Count}}</td>
+          <td class="text-right font-semibold text-success">{{.RevenueLabel}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{end}}
+
+<!-- Detail Table -->
+<div class="card overflow-hidden">
+  <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+    <span class="material-symbols-outlined text-primary text-[18px]">receipt_long</span>
+    <h3 class="text-sm font-semibold">Detail Transaksi</h3>
+  </div>
+  <div class="overflow-x-auto scrollbar-thin">
+    <table class="table">
+      <thead><tr>
+        <th>#</th>
+        <th>Waktu</th>
+        <th>Username</th>
+        <th>Profil</th>
+        <th>Komentar</th>
+        <th class="text-right">Harga</th>
+      </tr></thead>
+      <tbody>
+        {{range $i, $s := .Sales}}
+        <tr>
+          <td class="text-xs text-muted-foreground">{{add $i 1}}</td>
+          <td class="text-xs text-muted-foreground">{{$s.CreatedAt}}</td>
+          <td class="font-mono font-semibold">{{$s.Username}}</td>
+          <td>{{$s.Profile}}</td>
+          <td class="text-muted-foreground text-xs">{{$s.Comment}}</td>
+          <td class="text-right font-semibold {{if gt $s.Price 0}}text-success{{else}}text-muted-foreground{{end}}">
+            {{if gt $s.Price 0}}Rp {{$s.Price}}{{else}}—{{end}}
+          </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="6">
+          <div class="empty-state">
+            <span class="material-symbols-outlined text-muted-foreground text-[40px]">receipt_long</span>
+            <p class="text-muted-foreground text-sm">Belum ada data penjualan untuk periode ini.</p>
+            <p class="text-muted-foreground text-xs mt-1">Data profil akan muncul bila ada transaksi di periode ini.</p>
+          </div>
+        </td></tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{end}}
+{{end}}

@@ -1,0 +1,112 @@
+{{template "layout" .}}
+{{define "content"}}
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Admin</h1>
+  <p class="text-muted-foreground text-sm mt-0.5">Kelola multi-admin dan peran (owner / operator / viewer)</p>
+</div>
+
+{{$d := .Data}}
+{{with $d}}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <div class="lg:col-span-2 card">
+    <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+      <span class="material-symbols-outlined text-primary text-[18px]">group</span>
+      <h3 class="text-sm font-semibold">Daftar Admin</h3>
+    </div>
+    <div class="card-content overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-left text-muted-foreground">
+            <th class="py-2 pr-3 font-medium">ID</th>
+            <th class="py-2 pr-3 font-medium">Username</th>
+            <th class="py-2 pr-3 font-medium">Role</th>
+            <th class="py-2 font-medium">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Admins}}
+          <tr class="border-b border-border/60">
+            <td class="py-2.5 pr-3">{{.ID}}</td>
+            <td class="py-2.5 pr-3 font-medium">{{.Username}}{{if eq .ID (index $d "SelfID")}} <span class="text-xs text-muted-foreground">(anda)</span>{{end}}</td>
+            <td class="py-2.5 pr-3">
+              <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium
+                {{if eq .Role "owner"}}bg-primary/10 text-primary
+                {{else if eq .Role "operator"}}bg-success/10 text-success
+                {{else}}bg-muted text-muted-foreground{{end}}">{{.Role}}</span>
+            </td>
+            <td class="py-2.5">
+              <div class="flex flex-wrap gap-2 items-center">
+                <form method="POST" action="/settings/admins/update" class="flex flex-wrap gap-2 items-center" data-loading>
+                  <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                  <input type="hidden" name="id" value="{{.ID}}"/>
+                  <input type="text" name="username" value="{{.Username}}" class="input h-8 w-28 text-xs"/>
+                  <select name="role" class="input h-8 w-28 text-xs">
+                    <option value="owner" {{if eq .Role "owner"}}selected{{end}}>owner</option>
+                    <option value="operator" {{if eq .Role "operator"}}selected{{end}}>operator</option>
+                    <option value="viewer" {{if eq .Role "viewer"}}selected{{end}}>viewer</option>
+                  </select>
+                  <input type="password" name="password" placeholder="Pass baru" class="input h-8 w-28 text-xs"/>
+                  <button type="submit" class="btn btn-outline btn-sm">Simpan</button>
+                </form>
+                {{if ne .ID (index $d "SelfID")}}
+                <form method="POST" action="/settings/admins/delete" data-loading data-loading-text="Menghapus admin... Jangan refresh." onsubmit="return confirm('Hapus admin {{.Username}}?');">
+                  <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                  <input type="hidden" name="id" value="{{.ID}}"/>
+                  <button type="submit" class="btn btn-sm text-destructive hover:bg-destructive/10">Hapus</button>
+                </form>
+                {{end}}
+              </div>
+            </td>
+          </tr>
+          {{else}}
+          <tr><td colspan="4" class="py-6 text-center text-muted-foreground">Belum ada admin.</td></tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+      <span class="material-symbols-outlined text-primary text-[18px]">person_add</span>
+      <h3 class="text-sm font-semibold">Tambah Admin</h3>
+    </div>
+    <div class="card-content">
+      <form method="POST" action="/settings/admins/create" data-loading class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <div class="space-y-1.5">
+          <label class="label">Username</label>
+          <input type="text" name="username" required class="input" autocomplete="off"/>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Password</label>
+          <input type="password" name="password" required class="input"/>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Role</label>
+          <select name="role" class="input">
+            <option value="operator">operator</option>
+            <option value="viewer">viewer</option>
+            <option value="owner">owner</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-md w-full">
+          <span class="material-symbols-outlined text-[18px]">add</span>
+          Buat Admin
+        </button>
+      </form>
+      <p class="text-xs text-muted-foreground mt-4 leading-relaxed">
+        <strong>owner</strong> — penuh termasuk kelola admin &amp; restore.<br/>
+        <strong>operator</strong> — mutasi user/voucher/profile/router.<br/>
+        <strong>viewer</strong> — hanya baca (GET).
+      </p>
+    </div>
+  </div>
+
+</div>
+{{end}}
+{{end}}
+
+{{define "scripts"}}{{end}}

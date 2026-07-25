@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MikroTik Manager - Voucher Generator Engine</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#dad7ff",
+                        "on-tertiary-fixed": "#351000",
+                        "inverse-primary": "#c3c0ff",
+                        "secondary-fixed": "#d3e4fe",
+                        "tertiary-container": "#a44100",
+                        "background": "#f7f9fb",
+                        "on-background": "#191c1e",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container-low": "#f2f4f6",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "surface-variant": "#e0e3e5",
+                        "inverse-on-surface": "#eff1f3",
+                        "outline-variant": "#c7c4d8",
+                        "error-container": "#ffdad6",
+                        "secondary": "#505f76",
+                        "primary-fixed": "#e2dfff",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffb695",
+                        "surface-container": "#eceef0",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "inverse-surface": "#2d3133",
+                        "on-secondary-container": "#54647a",
+                        "tertiary-fixed": "#ffdbcc",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "tertiary": "#7e3000",
+                        "surface-bright": "#f7f9fb",
+                        "on-tertiary-fixed-variant": "#7b2f00",
+                        "surface-container-high": "#e6e8ea",
+                        "on-surface": "#191c1e",
+                        "outline": "#777587",
+                        "on-secondary-fixed": "#0b1c30",
+                        "primary-container": "#4f46e5",
+                        "secondary-container": "#d0e1fb",
+                        "on-surface-variant": "#464555",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#ffd2be",
+                        "surface": "#f7f9fb",
+                        "surface-dim": "#d8dadc",
+                        "primary": "#3525cd",
+                        "on-primary-fixed": "#0f0069",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#4d44e3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "xl": "32px",
+                        "container-max": "1440px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "gutter": "20px",
+                        "sidebar-width": "260px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "h3": ["Inter"],
+                        "h1": ["Inter"],
+                        "mono-data": ["monospace"],
+                        "h2": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "h3": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "h1": ["30px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "mono-data": ["13px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "h2": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-[260px] bg-slate-900 border-r border-slate-800 shadow-xl flex flex-col h-full py-6 z-50">
+<div class="px-6 mb-8 flex items-center gap-3">
+<img alt="Admin Avatar" class="w-10 h-10 rounded-full border border-slate-700" data-alt="A professional headshot of a network administrator. The lighting is bright and corporate, highlighting a clean, modern aesthetic. The subject is wearing a subtle dark jacket against a muted gray background. The overall tone is reliable, secure, and professional, perfectly suited for an enterprise management dashboard interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJRazZTNK69UMKxjpSWSGornY1OuoZ_OswC4kGXtp6KoGuTXPvosYquexyo2SwsLzEIiFXY9rFlEnjSlTyk7-ryRb_TJvNVihL6blKkF-i5adtjVZNHjJfaaK5n5yGqovc2Et3mNn1V2LBmLxGI2iUNXXZBo8RqFPw8qIm-6ZIn00LzWeufHl_BK-dZyXfHhEz7-N05KA39q5TASFs2wKzeVh2VmwKL-1TSOb7BbCsoeyPTUetXWTQe7GMBFnCaow0lK4k7rNtuVyS"/>
+<div>
+<h2 class="text-xl font-bold tracking-tight text-white font-h3 text-h3">MikroTik Admin</h2>
+<p class="text-slate-400 font-body-sm text-body-sm">Network Operator</p>
+</div>
+</div>
+<button class="mx-4 mb-6 bg-indigo-600 text-white font-body-md text-body-md py-2 px-4 rounded-DEFAULT hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+            Generate Vouchers
+        </button>
+<div class="flex-1 flex flex-col gap-1 overflow-y-auto font-inter text-sm antialiased">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all duration-150 scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-semibold hover:bg-slate-800/50 transition-all duration-150 scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="confirmation_number">confirmation_number</span>
+                Voucher Generator
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all duration-150 scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+                User List
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all duration-150 scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="settings_input_component">settings_input_component</span>
+                Profiles
+            </a>
+</div>
+<div class="mt-auto px-4 flex flex-col gap-1 font-inter text-sm antialiased border-t border-slate-800 pt-4">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all duration-150 scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                Settings
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all duration-150 scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                Logout
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 ml-[260px] flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm flex items-center justify-between h-16 px-8 max-w-[1440px]">
+<div class="flex items-center gap-6">
+<div class="text-lg font-black text-slate-900 font-h3 text-h3 tracking-tight">MikroTik Manager</div>
+<nav class="hidden md:flex gap-6 font-inter text-sm font-medium">
+<a class="text-slate-600 hover:text-indigo-500 transition-colors opacity-80 hover:opacity-100 py-4" href="#">Network Status</a>
+<a class="text-slate-600 hover:text-indigo-500 transition-colors opacity-80 hover:opacity-100 py-4" href="#">Logs</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-body-md">search</span>
+<input class="pl-10 pr-4 py-1.5 bg-surface-container-low border border-slate-200 rounded-DEFAULT text-body-sm font-body-sm focus:border-primary focus:ring-1 focus:ring-primary w-64 outline-none transition-all" placeholder="Search..." type="text"/>
+</div>
+<button class="text-slate-600 hover:text-indigo-500 transition-colors opacity-80 hover:opacity-100 p-2">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-slate-600 hover:text-indigo-500 transition-colors opacity-80 hover:opacity-100 p-2">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<button class="bg-surface-container border border-slate-200 text-on-surface font-body-sm text-body-sm px-4 py-1.5 rounded-DEFAULT hover:bg-surface-container-high transition-colors ml-4">
+                    System Reboot
+                </button>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 p-8 max-w-[1440px] w-full mx-auto">
+<div class="mb-8">
+<h1 class="font-h1 text-h1 text-on-surface mb-2">Voucher Generator Engine</h1>
+<p class="font-body-lg text-body-lg text-secondary">Configure batch parameters to generate new network access credentials.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<!-- Left Column: Primary Forms -->
+<div class="lg:col-span-2 space-y-lg">
+<!-- Target Configuration -->
+<section class="bg-surface-container-lowest border border-surface-variant rounded-xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+<div class="flex items-center gap-2 mb-6 border-b border-surface-variant pb-4">
+<span class="material-symbols-outlined text-primary">target</span>
+<h2 class="font-h3 text-h3 text-on-surface">Target Configuration</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase tracking-wider">Quantity</label>
+<input class="w-full border border-outline-variant rounded-DEFAULT px-3 py-2 font-mono-data text-mono-data focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" type="number" value="50"/>
+<p class="font-body-sm text-body-sm text-outline">Number of vouchers to generate (Max 500).</p>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase tracking-wider">Server / Hotspot</label>
+<select class="w-full border border-outline-variant rounded-DEFAULT px-3 py-2 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none bg-surface-container-lowest">
+<option>Hotspot-1 (Main Branch)</option>
+<option>Hotspot-2 (Guest Network)</option>
+<option>All Servers</option>
+</select>
+</div>
+<div class="space-y-2 md:col-span-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase tracking-wider">User Profile</label>
+<select class="w-full border border-outline-variant rounded-DEFAULT px-3 py-2 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none bg-surface-container-lowest">
+<option>1GB_Daily_Pass (10 Mbps / 2 Mbps)</option>
+<option>Unlimited_Weekly (5 Mbps / 1 Mbps)</option>
+<option>VIP_Monthly (50 Mbps / 20 Mbps)</option>
+</select>
+<div class="mt-2 flex gap-2">
+<span class="inline-flex items-center gap-1 bg-surface-container px-2 py-1 rounded-DEFAULT font-label-caps text-label-caps text-secondary">
+<span class="material-symbols-outlined text-[14px]">speed</span> 10/2 Mbps
+                                    </span>
+<span class="inline-flex items-center gap-1 bg-surface-container px-2 py-1 rounded-DEFAULT font-label-caps text-label-caps text-secondary">
+<span class="material-symbols-outlined text-[14px]">timer</span> 24 Hours
+                                    </span>
+</div>
+</div>
+</div>
+</section>
+<!-- Credential Format -->
+<section class="bg-surface-container-lowest border border-surface-variant rounded-xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+<div class="flex items-center gap-2 mb-6 border-b border-surface-variant pb-4">
+<span class="material-symbols-outlined text-primary">password</span>
+<h2 class="font-h3 text-h3 text-on-surface">Credential Format</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-4 md:col-span-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase tracking-wider">Authentication Mode</label>
+<div class="flex gap-4">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="text-primary focus:ring-primary" name="auth_mode" type="radio"/>
+<span class="font-body-md text-body-md">Username = Password</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="text-primary focus:ring-primary" name="auth_mode" type="radio"/>
+<span class="font-body-md text-body-md">Username &amp; Password</span>
+</label>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase tracking-wider">Code Length</label>
+<select class="w-full border border-outline-variant rounded-DEFAULT px-3 py-2 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none bg-surface-container-lowest">
+<option>6 Characters</option>
+<option>8 Characters</option>
+<option>10 Characters</option>
+<option>12 Characters</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase tracking-wider">Prefix (Optional)</label>
+<input class="w-full border border-outline-variant rounded-DEFAULT px-3 py-2 font-mono-data text-mono-data focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g., VIP-" type="text"/>
+</div>
+<div class="space-y-4 md:col-span-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase tracking-wider">Character Set</label>
+<div class="flex flex-wrap gap-4">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="text-primary focus:ring-primary rounded-sm" type="checkbox"/>
+<span class="font-body-md text-body-md">Numbers (0-9)</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="text-primary focus:ring-primary rounded-sm" type="checkbox"/>
+<span class="font-body-md text-body-md">Lowercase (a-z)</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="text-primary focus:ring-primary rounded-sm" type="checkbox"/>
+<span class="font-body-md text-body-md">Uppercase (A-Z)</span>
+</label>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Enforcement Limits & Action -->
+<div class="space-y-lg">
+<!-- Enforcement Limits -->
+<section class="bg-surface-container-lowest border border-surface-variant rounded-xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+<div class="flex items-center gap-2 mb-6 border-b border-surface-variant pb-4">
+<span class="material-symbols-outlined text-primary">policy</span>
+<h2 class="font-h3 text-h3 text-on-surface">Enforcement Limits</h2>
+</div>
+<div class="space-y-6">
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase tracking-wider">Time Limit</label>
+<div class="flex items-center gap-2">
+<input class="w-24 border border-outline-variant rounded-DEFAULT px-3 py-2 font-mono-data text-mono-data focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="24" type="number"/>
+<select class="flex-1 border border-outline-variant rounded-DEFAULT px-3 py-2 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none bg-surface-container-lowest">
+<option>Hours</option>
+<option>Days</option>
+<option>Minutes</option>
+</select>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase tracking-wider">Data Quota</label>
+<div class="flex items-center gap-2">
+<input class="w-24 border border-outline-variant rounded-DEFAULT px-3 py-2 font-mono-data text-mono-data focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="1024" type="number"/>
+<select class="flex-1 border border-outline-variant rounded-DEFAULT px-3 py-2 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none bg-surface-container-lowest">
+<option>MB</option>
+<option>GB</option>
+</select>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant block uppercase tracking-wider">Price (Optional)</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 font-body-md text-outline">$</span>
+<input class="w-full pl-8 border border-outline-variant rounded-DEFAULT px-3 py-2 font-mono-data text-mono-data focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="0.00" type="number"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Summary & Action -->
+<section class="bg-surface-container rounded-xl p-6 border border-surface-variant">
+<h3 class="font-h3 text-h3 text-on-surface mb-4">Generation Summary</h3>
+<div class="space-y-2 mb-6 font-body-sm text-body-sm text-on-surface-variant">
+<div class="flex justify-between">
+<span>Total Vouchers:</span>
+<span class="font-mono-data text-on-surface">50</span>
+</div>
+<div class="flex justify-between">
+<span>Profile:</span>
+<span class="text-on-surface">1GB_Daily_Pass</span>
+</div>
+<div class="flex justify-between">
+<span>Format:</span>
+<span class="font-mono-data text-on-surface">[6 char] [a-z,0-9]</span>
+</div>
+</div>
+<div class="flex flex-col gap-3">
+<button class="w-full bg-primary text-on-primary font-body-md text-body-md font-medium py-3 px-4 rounded-DEFAULT hover:bg-primary-fixed-variant transition-colors flex items-center justify-center gap-2 shadow-sm">
+<span class="material-symbols-outlined">bolt</span>
+                                Generate 50 Vouchers
+                            </button>
+<button class="w-full bg-surface-container-lowest border border-outline-variant text-on-surface font-body-md text-body-md font-medium py-3 px-4 rounded-DEFAULT hover:bg-surface-container-low transition-colors">
+                                Reset Form
+                            </button>
+</div>
+</section>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,28 @@
+# Jangan commit file .env production
+.env
+
+# Binary
+mikvoc
+
+# Database
+mikvoc.db
+mikvoc.db-*
+*.db
+
+# Log
+*.log
+
+# Local build and tooling
+web/node_modules/
+coverage.out
+.DS_Store
+
+# Local agent scratch files
+findings.md
+progress.md
+task_plan.md
+AGENTS.md
+AI_AGENT.md
+ARCHITECTURE.md
+SaaS_ARCHITECTURE.md
+docs/superpowers/

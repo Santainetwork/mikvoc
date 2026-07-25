@@ -1,0 +1,217 @@
+{{template "layout" .}}
+{{define "content"}}
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Pengaturan</h1>
+  <p class="text-muted-foreground text-sm mt-0.5">Konfigurasi router, tampilan, dan akun admin</p>
+</div>
+
+{{with .Data}}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <!-- Router Connection -->
+  <div class="lg:col-span-2 card">
+    <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+      <span class="material-symbols-outlined text-primary text-[18px]">router</span>
+      <h3 class="text-sm font-semibold">Koneksi Router Mikrotik</h3>
+      {{if $.Connected}}
+      <span class="ml-auto inline-flex items-center gap-1.5 text-xs text-success bg-success/10 border border-success/20 px-2 py-0.5 rounded-full font-medium">
+        <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>Terhubung
+        {{if $.ROSVersion}}· ROS {{$.ROSVersion}}{{end}}
+      </span>
+      {{else}}
+      <span class="ml-auto inline-flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 border border-destructive/20 px-2 py-0.5 rounded-full font-medium">
+        <span class="w-1.5 h-1.5 rounded-full bg-destructive"></span>Tidak Terhubung
+      </span>
+      {{end}}
+    </div>
+    <div class="card-content">
+      <form method="POST" action="/settings" data-loading>
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <input type="hidden" name="action" value="router"/>
+        <input type="hidden" name="router_id" value="{{.ActiveRouter.ID}}"/>
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="space-y-1.5">
+            <label class="label">Nama Router</label>
+            <input type="text" name="router_name" value="{{.ActiveRouter.Name}}" placeholder="cth: Router Utama" class="input"/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="label">IP Address</label>
+            <input type="text" name="router_ip" value="{{.ActiveRouter.IP}}" placeholder="192.168.88.1" required class="input"/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="label">Port API</label>
+            <input type="text" name="router_port" value="{{if .ActiveRouter.Port}}{{.ActiveRouter.Port}}{{else}}8728{{end}}" class="input"/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="label">Username</label>
+            <input type="text" name="router_username" value="{{.ActiveRouter.Username}}" placeholder="admin" required class="input"/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="label">Password</label>
+            <input type="password" name="router_password" placeholder="Kosongkan = tidak ganti" class="input"/>
+          </div>
+        </div>
+        <div class="mt-5 flex gap-3 flex-wrap">
+          <button type="submit" name="action" value="router" class="btn btn-primary btn-md">
+            <span class="material-symbols-outlined text-[18px]">sync</span>
+            Simpan & Sambungkan
+          </button>
+          <button type="button" onclick="testAPI()" class="btn btn-outline btn-md">
+            <span class="material-symbols-outlined text-[18px]">network_check</span>
+            Test Koneksi API
+          </button>
+          <button type="submit" name="action" value="router_add" class="btn btn-success btn-md ml-auto">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Tambah Router Baru
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Appearance -->
+  <div class="card">
+    <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+      <span class="material-symbols-outlined text-primary text-[18px]">palette</span>
+      <h3 class="text-sm font-semibold">Tampilan</h3>
+    </div>
+    <div class="card-content">
+      <form method="POST" action="/settings" data-loading>
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <input type="hidden" name="action" value="appearance"/>
+        <div class="space-y-4">
+          <div class="space-y-1.5">
+            <label class="label">Mata Uang</label>
+            <input type="text" name="currency" value="{{index .Settings "currency"}}" placeholder="Rp" class="input"/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="label">Zona Waktu</label>
+            <input type="text" name="timezone" value="{{index .Settings "timezone"}}" placeholder="Asia/Jakarta" class="input"/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="label">Bahasa</label>
+            <select name="language" class="input">
+              <option value="id" {{if eq (index .Settings "language") "id"}}selected{{end}}>Bahasa Indonesia</option>
+              <option value="en" {{if eq (index .Settings "language") "en"}}selected{{end}}>English</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-secondary btn-md mt-5">
+          <span class="material-symbols-outlined text-[18px]">save</span>Simpan
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Account -->
+  <div class="card">
+    <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+      <span class="material-symbols-outlined text-primary text-[18px]">manage_accounts</span>
+      <h3 class="text-sm font-semibold">Akun Admin</h3>
+    </div>
+    <div class="card-content">
+      <form method="POST" action="/settings" data-loading>
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <input type="hidden" name="action" value="admin"/>
+        <div class="space-y-4">
+          <div class="space-y-1.5">
+            <label class="label">Username Admin</label>
+            <input type="text" name="admin_username" value="{{.AdminUsername}}" class="input"/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="label">Password Baru</label>
+            <input type="password" name="admin_password" placeholder="Kosongkan = tidak ganti" class="input"/>
+            <p class="text-xs text-muted-foreground">Password disimpan sebagai hash bcrypt (cost 12).</p>
+          </div>
+        </div>
+        <div class="mt-5 flex items-center gap-2">
+          <button type="submit" class="btn btn-secondary btn-md">
+            <span class="material-symbols-outlined text-[18px]">save</span>Perbarui Akun
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Backup & Restore -->
+  <div class="lg:col-span-2 card">
+    <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+      <span class="material-symbols-outlined text-primary text-[18px]">database</span>
+      <h3 class="text-sm font-semibold">Backup &amp; Restore Database</h3>
+    </div>
+    <div class="card-content">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-3">
+          <p class="text-sm text-muted-foreground">Unduh salinan database SQLite saat ini (router, settings, sales, template).</p>
+          <a href="/settings/backup" class="btn btn-outline btn-md inline-flex">
+            <span class="material-symbols-outlined text-[18px]">download</span>
+            Download Backup
+          </a>
+        </div>
+        <div class="space-y-3">
+          <p class="text-sm text-muted-foreground">Pulihkan dari file backup <code class="text-xs">.db</code>. DB lama disimpan sebagai <code class="text-xs">.bak.*</code>.</p>
+          <form method="POST" action="/settings/restore" enctype="multipart/form-data" data-loading
+                onsubmit="return confirm('Restore akan mengganti database aktif. Lanjutkan?');">
+            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+            <div class="flex flex-wrap items-end gap-3">
+              <div class="space-y-1.5 flex-1 min-w-[12rem]">
+                <label class="label">File Database</label>
+                <input type="file" name="db_file" accept=".db,application/octet-stream" required class="input"/>
+              </div>
+              <button type="submit" class="btn btn-secondary btn-md" data-confirm="Yakin restore database?">
+                <span class="material-symbols-outlined text-[18px]">upload</span>
+                Restore
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{{end}}
+{{end}}
+
+{{define "scripts"}}
+<script>
+async function testAPI() {
+  const btn = document.querySelector('button[onclick="testAPI()"]');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span> Mengetes...';
+  btn.disabled = true;
+
+  const ip = document.querySelector('input[name="router_ip"]').value;
+  const port = document.querySelector('input[name="router_port"]').value;
+  const username = document.querySelector('input[name="router_username"]').value;
+  const password = document.querySelector('input[name="router_password"]').value;
+
+  try {
+    const fd = new URLSearchParams();
+    fd.append("ip", ip);
+    fd.append("port", port);
+    fd.append("username", username);
+    fd.append("password", password);
+
+    const res = await fetch('/api/test-router', {
+      method: 'POST',
+      body: fd,
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+    });
+    
+    const data = await res.json();
+    if (data.success) {
+      window.showToast("Berhasil terhubung: " + data.message, 'success', 'check_circle');
+    } else {
+      window.showToast("Gagal terhubung: " + data.message, 'destructive', 'error');
+    }
+  } catch(e) {
+    window.showToast("Error jaringan/server: " + e, 'destructive', 'error');
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+</script>
+{{end}}

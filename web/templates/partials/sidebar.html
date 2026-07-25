@@ -1,0 +1,105 @@
+{{define "sidebar"}}
+<!-- Mobile backdrop -->
+<div id="sidebar-backdrop" class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden hidden" onclick="document.getElementById('sidebar').classList.add('-translate-x-full'); this.classList.add('hidden')"></div>
+
+<aside id="sidebar" class="fixed left-0 top-0 z-50 h-screen w-64 -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out
+  bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col">
+
+  <!-- Brand -->
+  <a href="/routers" class="flex items-center gap-3 px-5 h-16 border-b border-sidebar-border shrink-0">
+    <div class="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg shadow-sm">M</div>
+    <div class="flex-1 min-w-0">
+      <h2 class="text-base font-bold tracking-tight leading-tight">MikVoc</h2>
+      <span class="text-[11px] text-muted-foreground flex items-center gap-1">
+        <span class="material-symbols-outlined text-[12px]">swap_horiz</span>
+        Ganti Sesi
+      </span>
+    </div>
+    <button class="md:hidden text-muted-foreground hover:text-foreground" onclick="document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('sidebar-backdrop').classList.add('hidden')">
+      <span class="material-symbols-outlined text-[20px]">close</span>
+    </button>
+  </a>
+
+  {{if .Routers}}
+  <div class="px-3 py-3 border-b border-sidebar-border">
+    <form method="POST" action="/settings/switch-router" id="sidebar-router-switch-form">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-1.5 block">Sesi Router</label>
+      <select name="id" onchange="var f=document.getElementById('sidebar-router-switch-form'); if(f.requestSubmit){f.requestSubmit()}else{f.submit()}"
+        class="input h-8 text-xs cursor-pointer truncate">
+        {{range .Routers}}
+        <option value="{{.ID}}" {{if eq .ID $.ActiveIdx}}selected{{end}}>{{if .Name}}{{.Name}}{{else}}{{.IP}}{{end}}</option>
+        {{end}}
+      </select>
+    </form>
+  </div>
+  {{else}}
+  <div class="px-3 py-3 border-b border-sidebar-border">
+    <p class="text-xs text-muted-foreground">Belum ada router. <a href="/settings" class="text-primary underline">Tambah</a></p>
+  </div>
+  {{end}}
+
+  <!-- Quick action -->
+  <div class="px-3 py-3">
+    <a href="/hotspot/generate" class="btn btn-primary btn-md w-full">
+      <span class="material-symbols-outlined text-[18px]">add</span>
+      Generate Voucher
+    </a>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex-1 overflow-y-auto scrollbar-thin px-2 py-2 space-y-0.5">
+    <p class="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Utama</p>
+    {{template "nav-item" (dict "Href" "/routers" "ActiveMenu" .ActiveMenu "Match" "routers" "Icon" "router" "Label" "Sesi Router")}}
+    {{template "nav-item" (dict "Href" "/dashboard" "ActiveMenu" .ActiveMenu "Match" "dashboard" "Icon" "dashboard" "Label" "Dashboard")}}
+    {{template "nav-item" (dict "Href" "/hotspot/active" "ActiveMenu" .ActiveMenu "Match" "active" "Icon" "wifi" "Label" "Hotspot Aktif" "Dot" .Connected)}}
+    {{template "nav-item" (dict "Href" "/report" "ActiveMenu" .ActiveMenu "Match" "report" "Icon" "monitoring" "Label" "Laporan")}}
+
+    <p class="px-3 mt-4 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Hotspot</p>
+    {{template "nav-item" (dict "Href" "/hotspot/generate" "ActiveMenu" .ActiveMenu "Match" "generate" "Icon" "confirmation_number" "Label" "Generate")}}
+    {{template "nav-item" (dict "Href" "/hotspot/users" "ActiveMenu" .ActiveMenu "Match" "users" "Icon" "group" "Label" "User List")}}
+    {{template "nav-item" (dict "Href" "/hotspot/profiles" "ActiveMenu" .ActiveMenu "Match" "profiles" "Icon" "dns" "Label" "Profiles")}}
+
+    <p class="px-3 mt-4 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">PPPoE</p>
+    {{template "nav-item" (dict "Href" "/ppp/generate" "ActiveMenu" .ActiveMenu "Match" "ppp-generate" "Icon" "person_add" "Label" "Generate Secret")}}
+    {{template "nav-item" (dict "Href" "/ppp/secrets" "ActiveMenu" .ActiveMenu "Match" "ppp-secrets" "Icon" "key" "Label" "PPP Secrets")}}
+    {{template "nav-item" (dict "Href" "/ppp/active" "ActiveMenu" .ActiveMenu "Match" "ppp-active" "Icon" "lan" "Label" "PPP Aktif" "Dot" .Connected)}}
+    {{template "nav-item" (dict "Href" "/ppp/profiles" "ActiveMenu" .ActiveMenu "Match" "ppp-profiles" "Icon" "tune" "Label" "PPP Profiles")}}
+
+    <p class="px-3 mt-4 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Sistem</p>
+    {{template "nav-item" (dict "Href" "/template" "ActiveMenu" .ActiveMenu "Match" "template" "Icon" "web" "Label" "Template Hotspot")}}
+    {{template "nav-item" (dict "Href" "/settings" "ActiveMenu" .ActiveMenu "Match" "settings" "Icon" "settings" "Label" "Pengaturan")}}
+    {{if or (eq .AdminRole "owner") (eq .AdminRole "operator") (eq .AdminRole "")}}
+    {{template "nav-item" (dict "Href" "/settings/audit" "ActiveMenu" .ActiveMenu "Match" "audit" "Icon" "history" "Label" "Audit Log")}}
+    {{end}}
+    {{if or (eq .AdminRole "owner") (eq .AdminRole "")}}
+    {{template "nav-item" (dict "Href" "/settings/admins" "ActiveMenu" .ActiveMenu "Match" "admins" "Icon" "admin_panel_settings" "Label" "Admin")}}
+    {{end}}
+  </nav>
+
+  <!-- Footer -->
+  <div class="mt-auto px-2 py-3 border-t border-sidebar-border space-y-1">
+    <div class="px-3 py-1.5 flex items-center gap-2 text-xs">
+      <span class="w-2 h-2 rounded-full {{if .Connected}}bg-success animate-pulse{{else}}bg-destructive{{end}}"></span>
+      <span class="{{if .Connected}}text-success{{else}}text-destructive{{end}} font-medium">
+        {{if .Connected}}Terhubung{{else}}Offline{{end}}
+      </span>
+      {{if .ROSVersion}}<span class="ml-auto text-muted-foreground text-[11px]">ROS {{.ROSVersion}}</span>{{end}}
+    </div>
+    <a href="/logout" class="nav-item nav-item-inactive text-destructive hover:bg-destructive/10 hover:text-destructive">
+      <span class="material-symbols-outlined text-[20px]">logout</span>
+      Logout
+    </a>
+    <p class="px-3 pt-1 text-center text-[10px] text-muted-foreground">Developed by SantaiNetwork &copy; 2026</p>
+  </div>
+</aside>
+{{end}}
+
+{{define "nav-item"}}
+{{$active := eq .ActiveMenu .Match}}
+<a href="{{.Href}}" class="nav-item {{if $active}}nav-item-active{{else}}nav-item-inactive{{end}}">
+  <span class="material-symbols-outlined text-[20px] {{if $active}}filled{{end}}">{{.Icon}}</span>
+  <span>{{.Label}}</span>
+  {{if .Dot}}<span class="ml-auto w-2 h-2 rounded-full bg-success animate-pulse"></span>{{end}}
+</a>
+{{end}}

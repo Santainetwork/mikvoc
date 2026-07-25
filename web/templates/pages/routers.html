@@ -1,0 +1,179 @@
+{{template "layout" .}}
+{{define "content"}}
+
+<div class="mb-8 text-center max-w-2xl mx-auto mt-6">
+  <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground mx-auto mb-4 shadow-xl shadow-primary/30">
+    <span class="material-symbols-outlined text-[32px]">router</span>
+  </div>
+  <h1 class="text-3xl font-bold tracking-tight mb-2">Pilih Sesi Router</h1>
+  <p class="text-muted-foreground">Pilih router Mikrotik yang ingin Anda kelola saat ini.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+  {{range .Data}}
+  {{$isActive := eq .ID $.ActiveIdx}}
+  <div class="card overflow-hidden hover:border-primary/50 transition-all group">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg {{if $isActive}}bg-primary text-primary-foreground{{else}}bg-muted text-muted-foreground{{end}} flex items-center justify-center">
+            <span class="material-symbols-outlined text-[20px]">dns</span>
+          </div>
+          <div class="min-w-0">
+            <h3 class="font-bold truncate">{{if .Name}}{{.Name}}{{else}}{{.IP}}{{end}}</h3>
+            <p class="text-xs text-muted-foreground">{{.IP}}:{{if .Port}}{{.Port}}{{else}}8728{{end}}</p>
+          </div>
+        </div>
+        {{if $isActive}}
+        <span class="badge badge-default">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-foreground animate-pulse"></span>Aktif
+        </span>
+        {{end}}
+      </div>
+      
+      <div class="flex items-center gap-2 mt-6">
+        <form method="POST" action="/settings/switch-router" class="flex-1 m-0">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+          <input type="hidden" name="id" value="{{.ID}}">
+          <button type="submit" class="btn {{if $isActive}}btn-primary{{else}}btn-secondary{{end}} btn-md w-full">
+            {{if $isActive}}Buka Dashboard{{else}}Pilih Sesi{{end}}
+          </button>
+        </form>
+        <a href="/settings" class="btn btn-outline btn-icon" title="Edit Pengaturan">
+          <span class="material-symbols-outlined text-[18px]">settings</span>
+        </a>
+        <button type="button" onclick="openDeleteRouterModal({{.ID}}, '{{if .Name}}{{.Name}}{{else}}{{.IP}}{{end}}')"
+          class="btn btn-outline btn-icon hover:bg-destructive/10 hover:text-destructive" title="Hapus Router">
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  {{end}}
+
+  <!-- Add New Router Card -->
+  <button type="button" onclick="openAddRouterModal()"
+    class="w-full h-full min-h-[160px] border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-accent transition-all group">
+    <span class="material-symbols-outlined text-[32px] mb-2 group-hover:scale-110 transition-transform">add_circle</span>
+    <span class="font-semibold text-sm">Tambah Router</span>
+  </button>
+</div>
+
+<!-- Modal: Tambah Router -->
+<div id="add-router-modal" class="modal-backdrop hidden" onclick="if(event.target===this) closeAddRouterModal()">
+  <div class="modal max-w-md">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-[22px]">router</span>
+        <h3 class="text-lg font-bold">Tambah Router Baru</h3>
+      </div>
+      <button type="button" onclick="closeAddRouterModal()" class="btn btn-ghost btn-icon">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+    <form method="POST" action="/settings" id="add-router-form" data-loading>
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <input type="hidden" name="action" value="router_add_full">
+      <div class="space-y-3">
+        <div>
+          <label class="label">Nama Router</label>
+          <input type="text" name="router_name" placeholder="Contoh: Router Kantor" required autofocus class="input"/>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="col-span-2">
+            <label class="label">IP Address</label>
+            <input type="text" name="router_ip" placeholder="192.168.88.1" required class="input"/>
+          </div>
+          <div>
+            <label class="label">Port</label>
+            <input type="text" name="router_port" placeholder="8728" value="8728" class="input"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="label">Username</label>
+            <input type="text" name="router_username" placeholder="admin" value="admin" class="input"/>
+          </div>
+          <div>
+            <label class="label">Password</label>
+            <input type="password" name="router_password" placeholder="••••••••" class="input"/>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 mt-6">
+        <button type="button" onclick="closeAddRouterModal()" class="btn btn-ghost btn-md">Batal</button>
+        <button type="submit" class="btn btn-primary btn-md">
+          <span class="material-symbols-outlined text-[18px]">add</span>
+          Tambah Router
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Hapus Router -->
+<div id="delete-router-modal" class="modal-backdrop hidden" onclick="if(event.target===this) closeDeleteRouterModal()">
+  <div class="modal max-w-sm">
+    <div class="flex flex-col items-center text-center mb-5">
+      <div class="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-3">
+        <span class="material-symbols-outlined text-destructive text-[26px]">delete</span>
+      </div>
+      <h3 class="text-lg font-bold">Hapus Router</h3>
+      <p class="text-sm text-muted-foreground mt-1">
+        Hapus <span id="delete-router-name" class="font-semibold text-foreground"></span>?
+        Semua data terkait (template, penjualan) akan ikut terhapus.
+      </p>
+    </div>
+    <form method="POST" action="/settings" id="delete-router-form" data-loading data-loading-text="Menghapus router... Jangan refresh.">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <input type="hidden" name="action" value="router_delete">
+      <input type="hidden" name="router_id" id="delete-router-id" value="">
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="closeDeleteRouterModal()" class="btn btn-ghost btn-md flex-1">Batal</button>
+        <button type="submit" class="btn btn-destructive btn-md flex-1">
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+          Hapus
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{end}}
+
+{{define "scripts"}}
+<script>
+function openAddRouterModal() {
+  const m = document.getElementById('add-router-modal');
+  if (!m) return;
+  m.classList.remove('hidden');
+  setTimeout(() => {
+    const f = m.querySelector('input[name="router_name"]');
+    if (f) f.focus();
+  }, 50);
+}
+function closeAddRouterModal() {
+  const m = document.getElementById('add-router-modal');
+  if (!m) return;
+  m.classList.add('hidden');
+}
+function openDeleteRouterModal(id, name) {
+  const m = document.getElementById('delete-router-modal');
+  if (!m) return;
+  document.getElementById('delete-router-id').value = id;
+  document.getElementById('delete-router-name').textContent = name;
+  m.classList.remove('hidden');
+}
+function closeDeleteRouterModal() {
+  const m = document.getElementById('delete-router-modal');
+  if (!m) return;
+  m.classList.add('hidden');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeAddRouterModal();
+    closeDeleteRouterModal();
+  }
+});
+</script>
+{{end}}

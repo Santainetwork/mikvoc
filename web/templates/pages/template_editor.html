@@ -1,0 +1,472 @@
+{{template "layout" .}}
+{{define "content"}}
+
+<div class="mb-6 flex items-center justify-between flex-wrap gap-3">
+  <div>
+    <h1 class="text-2xl font-bold text-foreground tracking-tight">Template Hotspot</h1>
+    <p class="text-muted-foreground text-sm mt-0.5">Kustomisasi halaman login Hotspot & upload langsung ke Mikrotik</p>
+  </div>
+  <div class="flex items-center gap-2">
+    {{if .Data.RouterID}}
+    <span class="badge badge-secondary">
+      <span class="material-symbols-outlined text-[14px]">dns</span>
+      {{if .Data.RouterName}}{{.Data.RouterName}}{{else}}Router #{{.Data.RouterID}}{{end}}
+    </span>
+    {{else}}
+    <span class="badge badge-outline text-warning">
+      <span class="material-symbols-outlined text-[14px]">warning</span>
+      Belum pilih router
+    </span>
+    {{end}}
+    <a href="/template/preview" target="_blank"
+      class="flex items-center gap-2 text-sm bg-muted hover:bg-muted border border-input text-foreground px-4 py-2 rounded-lg">
+      <span class="material-symbols-outlined text-[16px]">open_in_new</span>Preview Login
+    </a>
+  </div>
+</div>
+
+{{if not .Data.RouterID}}
+<div class="card border-warning/30 bg-warning/10 mb-6 p-4 flex items-start gap-3">
+  <span class="material-symbols-outlined text-warning text-[20px]">info</span>
+  <div class="text-sm text-warning">
+    <p class="font-semibold mb-1">Belum ada router aktif</p>
+    <p class="text-xs">Pilih sesi router di <a href="/routers" class="underline font-semibold">halaman routers</a> untuk mengatur template hotspot per-router. Tanpa router aktif, perubahan disimpan sebagai template global default.</p>
+  </div>
+</div>
+{{end}}
+
+{{with .Data}}
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+  <!-- Form (2/3) -->
+  <div class="xl:col-span-2 space-y-6">
+
+    <div class="card">
+      <form method="POST" action="/template" id="tpl-form-variant">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <fieldset class="p-6">
+          <legend class="text-sm font-semibold text-foreground px-1">Varian Template Hotspot</legend>
+          <p class="text-xs text-muted-foreground mt-1 mb-4">Pilih tampilan dasar. Pengaturan umum tetap digunakan pada semua varian bawaan.</p>
+          {{$currentVariant := index .Settings "tpl_variant"}}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {{range .Variants}}
+            <label data-variant-card data-selected="{{if eq .ID $currentVariant}}true{{else}}false{{end}}"
+              class="cursor-pointer rounded-xl border p-4 transition-colors {{if eq .ID $currentVariant}}border-primary bg-primary/5{{else}}border-border hover:border-primary/50{{end}}">
+              <span class="flex items-start gap-3">
+                <input type="radio" name="tpl_variant" value="{{.ID}}" {{if eq .ID $currentVariant}}checked{{end}}
+                  class="mt-1 text-primary focus:ring-ring">
+                <span><span class="block text-sm font-semibold text-foreground">{{.Name}}</span><span class="block text-xs text-muted-foreground mt-1">{{.Description}}</span></span>
+              </span>
+            </label>
+            {{end}}
+          </div>
+        </fieldset>
+      </form>
+    </div>
+
+    <div class="card" data-variant-panel="informative" {{if ne (index .Settings "tpl_variant") "informative"}}hidden{{end}}>
+      <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+        <span class="material-symbols-outlined text-primary text-[18px]">info</span>
+        <h3 class="text-sm font-semibold text-foreground">Panel Informasi</h3>
+      </div>
+      <form method="POST" action="/template" id="tpl-form-informative" class="p-6">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <label for="tpl-info-html" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">HTML Paket, Harga, dan Kontak</label>
+        <textarea id="tpl-info-html" name="tpl_info_html" rows="8" class="w-full bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring">{{index .Settings "tpl_info_html"}}</textarea>
+        <p class="text-xs text-warning mt-2">HTML ini dipercaya dan ditampilkan tanpa penyaringan. Hanya tempel kode dari sumber yang Anda percayai.</p>
+      </form>
+    </div>
+
+    <div class="card" data-variant-panel="custom" {{if ne (index .Settings "tpl_variant") "custom"}}hidden{{end}}>
+      <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+        <span class="material-symbols-outlined text-primary text-[18px]">code</span>
+        <h3 class="text-sm font-semibold text-foreground">Custom HTML & Aset</h3>
+      </div>
+      <form method="POST" action="/template" id="tpl-form-custom" enctype="multipart/form-data" class="p-6 space-y-4">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <div><label for="custom-login-html" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">login.html</label><textarea id="custom-login-html" name="tpl_custom_login_html" rows="12" class="w-full bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring">{{index .Settings "tpl_custom_login_html"}}</textarea></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label for="custom-status-html" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">status.html <span class="normal-case font-normal">(opsional)</span></label><textarea id="custom-status-html" name="tpl_custom_status_html" rows="7" class="w-full bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring">{{index .Settings "tpl_custom_status_html"}}</textarea></div>
+          <div><label for="custom-logout-html" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">logout.html <span class="normal-case font-normal">(opsional)</span></label><textarea id="custom-logout-html" name="tpl_custom_logout_html" rows="7" class="w-full bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring">{{index .Settings "tpl_custom_logout_html"}}</textarea></div>
+        </div>
+        <div>
+          <label for="assets-zip-input" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Paket Aset ZIP</label>
+          <input type="file" id="assets-zip-input" name="tpl_assets_zip" accept=".zip" class="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-white">
+        </div>
+        {{if .AssetNames}}<div><p class="text-xs font-semibold text-foreground mb-2">Aset tersimpan</p><ul class="text-xs text-muted-foreground font-mono space-y-1">{{range .AssetNames}}<li>{{.}}</li>{{end}}</ul></div>{{end}}
+        <label for="remove-assets" class="flex items-center gap-3 text-sm text-foreground"><input type="checkbox" id="remove-assets" name="remove_assets" value="1" class="rounded text-primary focus:ring-ring"> Hapus seluruh aset tersimpan saat menyimpan</label>
+      </form>
+    </div>
+
+    <!-- Identitas -->
+    <div class="card">
+      <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+        <span class="material-symbols-outlined text-primary text-[18px]">badge</span>
+        <h3 class="text-sm font-semibold text-foreground">Identitas & Teks</h3>
+      </div>
+      <form method="POST" action="/template" id="tpl-form-identitas">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <div class="p-6 space-y-4">
+          <div>
+            <label for="tpl-app-name" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Nama Jaringan / Judul</label>
+            <input type="text" id="tpl-app-name" name="tpl_app_name" value="{{index .Settings "tpl_app_name"}}"
+              class="w-full bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
+          </div>
+          <div>
+            <label for="tpl-subtitle" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Keterangan / Subtitle</label>
+            <input type="text" id="tpl-subtitle" name="tpl_subtitle" value="{{index .Settings "tpl_subtitle"}}"
+              class="w-full bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
+          </div>
+          <div>
+            <label for="tpl-btn-label" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Label Tombol Login</label>
+            <input type="text" id="tpl-btn-label" name="tpl_btn_label" value="{{index .Settings "tpl_btn_label"}}"
+              class="w-full bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
+          </div>
+          <div>
+            <label for="tpl-login-mode" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Mode Login</label>
+            <select id="tpl-login-mode" name="tpl_login_mode" class="w-full bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+              <option value="both" {{if eq (index .Settings "tpl_login_mode") "both"}}selected{{end}}>Keduanya (Username + Voucher)</option>
+              <option value="voucher" {{if eq (index .Settings "tpl_login_mode") "voucher"}}selected{{end}}>Hanya Voucher</option>
+              <option value="member" {{if eq (index .Settings "tpl_login_mode") "member"}}selected{{end}}>Hanya Member (User & Pass Terpisah)</option>
+            </select>
+          </div>
+          <div>
+            <label for="tpl-redirect-url" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">URL Redirect <span class="normal-case font-normal">(opsional)</span></label>
+            <input type="url" id="tpl-redirect-url" name="tpl_redirect_url" value="{{index .Settings "tpl_redirect_url"}}" placeholder="https://..."
+              class="w-full bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
+          </div>
+          <div>
+            <label for="tpl-dns-name" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">DNS Name Hotspot <span class="normal-case font-normal">(untuk voucher print)</span></label>
+            <input type="text" id="tpl-dns-name" name="tpl_dns_name" value="{{index .Settings "tpl_dns_name"}}" placeholder="hotspot.local"
+              class="w-full bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Logo -->
+    <div class="card">
+      <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+        <span class="material-symbols-outlined text-primary text-[18px]">image</span>
+        <h3 class="text-sm font-semibold text-foreground">Logo</h3>
+      </div>
+      <form method="POST" action="/template" id="tpl-form-logo" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <div class="p-6 space-y-4">
+          <!-- Logo preview -->
+          <div class="flex items-center gap-4">
+            <div id="logo-preview" class="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold overflow-hidden shrink-0"
+              style="background-color: {{index .Settings "tpl_primary_color"}}">
+              {{if index .Settings "tpl_logo_url"}}
+              <img src="{{index .Settings "tpl_logo_url"}}" class="w-full h-full object-contain" onerror="this.style.display='none'">
+              {{else}}
+              {{index .Settings "tpl_logo_text"}}
+              {{end}}
+            </div>
+            <div class="text-sm text-muted-foreground">
+              <p class="font-medium text-foreground mb-1">Logo Preview</p>
+              <p class="text-xs">Upload gambar, isi URL logo, atau kosongkan untuk pakai teks inisial.</p>
+            </div>
+          </div>
+          <div>
+            <label for="logo-upload-input" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Upload Logo <span class="normal-case font-normal">(PNG/JPG/WebP, maks. 512 KB)</span></label>
+            <input type="file" name="tpl_logo_upload" id="logo-upload-input" accept="image/png,image/jpeg,image/webp,image/gif"
+              class="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-primary/90"/>
+            <p class="text-xs text-muted-foreground mt-1">Upload akan mengganti URL logo saat desain disimpan.</p>
+          </div>
+          <div>
+            <label for="logo-url-input" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">URL Logo <span class="normal-case font-normal">(gambar, misal dari Imgur/hosting)</span></label>
+            <input type="url" name="tpl_logo_url" id="logo-url-input" value="{{index .Settings "tpl_logo_url"}}" placeholder="https://i.imgur.com/xxx.png"
+              class="w-full bg-muted border border-input text-foreground placeholder-slate-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
+            <p class="text-xs text-muted-foreground mt-1">Kosongkan jika ingin pakai teks inisial di bawah</p>
+          </div>
+          <div>
+            <label for="logo-text-input" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Teks Inisial Logo <span class="normal-case font-normal">(1-3 huruf, fallback jika URL kosong)</span></label>
+            <input type="text" name="tpl_logo_text" id="logo-text-input" value="{{index .Settings "tpl_logo_text"}}" maxlength="3"
+              class="w-24 bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm text-center font-bold focus:outline-none focus:ring-2 focus:ring-ring"/>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Warna & Tampilan -->
+    <div class="card">
+      <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+        <span class="material-symbols-outlined text-primary text-[18px]">palette</span>
+        <h3 class="text-sm font-semibold text-foreground">Warna & Tampilan</h3>
+      </div>
+      <form method="POST" action="/template" id="tpl-form-style">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <div class="p-6 space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="color-primary" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Warna Utama (Tombol, Logo)</label>
+              <div class="flex items-center gap-3">
+                <input type="color" name="tpl_primary_color" id="color-primary" value="{{index .Settings "tpl_primary_color"}}"
+                  class="w-10 h-10 rounded-lg cursor-pointer border border-input p-0.5"/>
+                <span id="color-primary-val" class="text-sm font-mono text-muted-foreground">{{index .Settings "tpl_primary_color"}}</span>
+              </div>
+            </div>
+            <div>
+              <label for="color-bg" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Warna Latar (Background)</label>
+              <div class="flex items-center gap-3">
+                <input type="color" name="tpl_bg_color" id="color-bg" value="{{index .Settings "tpl_bg_color"}}"
+                  class="w-10 h-10 rounded-lg cursor-pointer border border-input p-0.5"/>
+                <span id="color-bg-val" class="text-sm font-mono text-muted-foreground">{{index .Settings "tpl_bg_color"}}</span>
+              </div>
+            </div>
+          </div>
+          <label for="tpl-show-info" class="flex items-center gap-3 cursor-pointer py-1">
+            <input type="checkbox" id="tpl-show-info" name="tpl_show_info" value="true"
+              class="w-4 h-4 rounded text-primary focus:ring-ring bg-muted border-input"
+              {{if eq (index .Settings "tpl_show_info") "true"}}checked{{end}}>
+            <span class="text-sm text-foreground">Tampilkan info IP & MAC di bawah form</span>
+          </label>
+        </div>
+
+        <!-- Submit buttons (submit all forms) -->
+        <div class="px-6 pb-6 flex gap-3 flex-wrap">
+          <button type="button" data-template-action="save" onclick="submitAll('save')"
+            class="flex items-center gap-2 btn btn-secondary text-white px-5 py-2.5 rounded-lg text-sm font-medium">
+            <span class="material-symbols-outlined text-[16px]">save</span>Simpan Desain
+          </button>
+          <button type="button" data-template-action="push" onclick="submitAll('push')" {{if .PushBlockedReason}}aria-describedby="push-blocked-reason"{{end}}
+            class="flex items-center gap-2 btn btn-primary px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm shadow-indigo-600/20">
+            <span class="material-symbols-outlined text-[16px]">cloud_upload</span>Upload ke Mikrotik
+          </button>
+          <a href="/template/preview" target="_blank"
+            class="flex items-center gap-2 text-sm border border-input text-muted-foreground hover:bg-accent px-4 py-2.5 rounded-lg">
+            <span class="material-symbols-outlined text-[16px]">visibility</span>Preview
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Info Panel (1/3) -->
+  <div class="space-y-4">
+
+    <!-- Voucher Print Template Picker -->
+    <div class="card overflow-hidden">
+      <div class="flex items-center gap-2 px-5 py-4 border-b border-border">
+        <span class="material-symbols-outlined text-primary text-[18px]">receipt_long</span>
+        <h3 class="text-sm font-semibold text-foreground">Template Cetak Voucher</h3>
+      </div>
+      <div class="p-5">
+        <p class="text-xs text-muted-foreground mb-4">Pilih format cetak voucher. Default baru dibuat lebih padat dan siap potong seperti Mikhmon.</p>
+        <form method="POST" action="/template/voucher-template" class="space-y-3">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+          {{$currentTmpl := index .Settings "voucher_template"}}
+          {{range .VoucherTemplates}}
+          <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border {{if eq .ID $currentTmpl}}border-primary bg-primary/5{{else}}border-border hover:border-primary/50{{end}} transition-colors">
+            <input type="radio" name="voucher_template" value="{{.ID}}" {{if eq .ID $currentTmpl}}checked{{end}}
+              class="mt-0.5 text-primary focus:ring-ring" onchange="this.form.submit()"/>
+            <div>
+              <div class="text-sm font-semibold text-foreground">{{.Name}}</div>
+              <div class="text-xs text-muted-foreground mt-0.5">{{.Description}}</div>
+            </div>
+          </label>
+          {{end}}
+        </form>
+        <div class="mt-4 pt-4 border-t border-border">
+          <a href="/hotspot/users/quickprint?username=demo" target="_blank"
+            class="flex items-center gap-2 text-xs text-primary hover:text-primary">
+            <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+            Preview contoh voucher
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="flex items-center gap-2 px-5 py-4 border-b border-border">
+        <span class="material-symbols-outlined text-primary text-[18px]">folder_zip</span>
+        <h3 class="text-sm font-semibold text-foreground">Pengiriman Template</h3>
+      </div>
+      <div class="p-5 space-y-4">
+        {{if .FileInfos}}
+        <ul class="space-y-2" aria-label="Ukuran file template">
+          {{range .FileInfos}}<li class="flex items-center justify-between gap-3 text-xs"><span class="font-mono text-foreground break-all">{{.Name}}{{if .Asset}} <span class="text-muted-foreground">(aset)</span>{{end}}</span><span class="shrink-0 {{if .TooLarge}}text-destructive font-semibold{{else}}text-muted-foreground{{end}}">{{.Size}} / 4096 byte</span></li>{{end}}
+        </ul>
+        {{else}}<p class="text-xs text-muted-foreground">Ukuran file belum tersedia.</p>{{end}}
+        {{if .PushBlockedReason}}<div id="push-blocked-reason" role="status" class="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning"><strong>Push akan divalidasi saat dikirim:</strong> {{.PushBlockedReason}} Perbaiki field atau hapus aset, lalu Push; atau unduh Paket ZIP.</div>{{end}}
+        <a href="/template/download" class="btn btn-secondary flex items-center justify-center gap-2 px-4 py-2.5 text-sm"><span class="material-symbols-outlined text-[16px]">download</span>Unduh Paket ZIP</a>
+        <div class="text-xs text-muted-foreground space-y-2 leading-relaxed"><p>Untuk paket beraset atau file besar, buka <strong>Winbox</strong> atau <strong>WebFig</strong>, masuk ke <code>Files</code>, lalu unggah isi ZIP ke direktori hotspot.</p><p>Simpan desain tetap tersedia meski pengiriman langsung via API diblokir.</p></div>
+      </div>
+    </div>
+
+    <div class="bg-primary/10 border border-primary/20 rounded-xl p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-outlined text-primary text-[20px]">info</span>
+        <h3 class="font-semibold text-sm text-primary">Cara Kerja Login</h3>
+      </div>
+      <div class="text-xs text-primary space-y-2 leading-relaxed">
+        <p>Form login menggunakan <strong>Username + Password</strong> standar Mikrotik.</p>
+        <p>✓ <strong>Voucher:</strong> Isi Username dengan kode voucher, password boleh dikosongkan — password akan otomatis sama dengan username saat submit.</p>
+        <p>✓ <strong>Member:</strong> Isi keduanya seperti biasa.</p>
+        <p>Kompatibel dengan semua voucher yang digenerate MikVoc.</p>
+      </div>
+    </div>
+    <div class="bg-warning/10 border border-amber-500/20 rounded-xl p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-outlined text-warning text-[20px]">upload_file</span>
+        <h3 class="font-semibold text-sm text-warning">Upload ke Mikrotik</h3>
+      </div>
+      <div class="text-xs text-warning space-y-2 leading-relaxed">
+        <p>Tombol <strong>Upload ke Mikrotik</strong> akan mengganti <code>login.html</code>, <code>status.html</code>, dan <code>logout.html</code> di router yang aktif via API.</p>
+        <p>Pastikan router sudah <span class="font-semibold text-success">terhubung</span> dan memiliki akses ke <code>/file</code>.</p>
+        <p>Untuk logo kustom, host gambar Anda terlebih dahulu (Imgur, server sendiri, dll) lalu paste URL-nya.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
+{{end}}
+
+
+{{define "scripts"}}
+<script>
+  // Live color label updates
+  document.getElementById('color-primary')?.addEventListener('input', function() {
+    document.getElementById('color-primary-val').textContent = this.value;
+    document.getElementById('logo-preview').style.backgroundColor = this.value;
+  });
+  document.getElementById('color-bg')?.addEventListener('input', function() {
+    document.getElementById('color-bg-val').textContent = this.value;
+  });
+  // Live logo text preview
+  document.getElementById('logo-text-input')?.addEventListener('input', function() {
+    const preview = document.getElementById('logo-preview');
+    const url = document.getElementById('logo-url-input')?.value;
+    if (!url) preview.textContent = this.value;
+  });
+  document.getElementById('logo-url-input')?.addEventListener('input', function() {
+    const preview = document.getElementById('logo-preview');
+    if (this.value) {
+      const img = document.createElement('img');
+      img.src = this.value;
+      img.alt = 'Logo preview';
+      img.className = 'w-full h-full object-contain rounded-full';
+      img.onerror = function() { this.hidden = true; };
+      preview.replaceChildren(img);
+    } else {
+      preview.textContent = document.getElementById('logo-text-input')?.value || 'NET';
+    }
+  });
+  document.getElementById('logo-upload-input')?.addEventListener('change', function() {
+    const file = this.files && this.files[0];
+    const preview = document.getElementById('logo-preview');
+    if (!file || !preview) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.alt = 'Logo preview';
+      img.className = 'w-full h-full object-contain rounded-full';
+      img.onerror = function() { this.hidden = true; };
+      preview.replaceChildren(img);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  const variantInputs = document.querySelectorAll('input[name="tpl_variant"]');
+  function updateVariantPanels() {
+    const selected = document.querySelector('input[name="tpl_variant"]:checked')?.value || 'modern';
+    document.querySelectorAll('[data-variant-panel]').forEach(panel => {
+      panel.toggleAttribute('hidden', panel.dataset.variantPanel !== selected);
+    });
+    document.querySelectorAll('[data-variant-card]').forEach(card => {
+      const active = card.querySelector('input[name="tpl_variant"]')?.checked || false;
+      card.dataset.selected = active ? 'true' : 'false';
+      card.classList.toggle('border-primary', active);
+      card.classList.toggle('bg-primary/5', active);
+      card.classList.toggle('border-border', !active);
+    });
+  }
+  variantInputs.forEach(input => input.addEventListener('change', updateVariantPanels));
+  updateVariantPanels();
+
+  // Collect all form inputs and submit as one
+  function submitAll(action) {
+    const forms = document.querySelectorAll('form[action="/template"]');
+    if (!Array.from(forms).every(f => f.reportValidity())) return;
+    const logo = document.getElementById('logo-upload-input');
+    if (logo?.files?.length && logo.files[0].size > 512 * 1024) {
+      alert('Ukuran logo maksimal 512 KB.');
+      logo.focus();
+      return;
+    }
+    const assets = document.getElementById('assets-zip-input');
+    if (assets?.files?.length && (!assets.files[0].name.toLowerCase().endsWith('.zip') || assets.files[0].size > 2 * 1024 * 1024)) {
+      alert('Aset harus berupa ZIP maksimal 2 MiB.');
+      assets.focus();
+      return;
+    }
+    const master = document.createElement('form');
+    master.method = 'POST';
+    master.action = '/template';
+    master.enctype = 'multipart/form-data';
+    document.body.appendChild(master);
+
+    const seen = new Set();
+    forms.forEach(f => {
+      new FormData(f).forEach((val, key) => {
+        if (val instanceof File) return;
+        if (!seen.has(key)) {
+          seen.add(key);
+          const el = document.createElement('input');
+          el.type = 'hidden';
+          el.name = key;
+          el.value = val;
+          master.appendChild(el);
+        }
+      });
+    });
+    // Add checkboxes that aren't included by FormData when unchecked
+    document.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      if (!cb.checked && !seen.has(cb.name)) {
+        const el = document.createElement('input');
+        el.type = 'hidden'; el.name = cb.name; el.value = '';
+        master.appendChild(el);
+      }
+    });
+
+    const actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = action;
+    master.appendChild(actionInput);
+
+    if (!seen.has('csrf_token')) {
+      const tok = (window.mikvocCSRF && window.mikvocCSRF.token()) ||
+        window.__MIKVOC_CSRF__ ||
+        ((document.querySelector('meta[name="csrf-token"]') || {}).content) || '';
+      if (tok) {
+        const el = document.createElement('input');
+        el.type = 'hidden';
+        el.name = 'csrf_token';
+        el.value = tok;
+        master.appendChild(el);
+      }
+    }
+
+    if (action === 'push') {
+      if (!confirm('Ini akan mengganti file login.html di Mikrotik Anda. Lanjutkan?')) {
+        document.body.removeChild(master);
+        return;
+      }
+    }
+    ['logo-upload-input', 'assets-zip-input'].forEach(id => {
+      const upload = document.getElementById(id);
+      if (upload && upload.files && upload.files.length > 0) {
+        const replacement = upload.cloneNode();
+        replacement.name = upload.name;
+        replacement.id = upload.id;
+        master.appendChild(upload);
+        document.getElementById(id === 'logo-upload-input' ? 'tpl-form-logo' : 'tpl-form-custom')?.appendChild(replacement);
+      }
+    });
+    master.submit();
+  }
+</script>
+{{end}}

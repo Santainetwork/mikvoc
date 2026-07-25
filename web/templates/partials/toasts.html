@@ -1,0 +1,57 @@
+{{define "toasts"}}
+<div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 w-full max-w-sm pointer-events-none"></div>
+
+<template id="toast-template">
+  <div class="toast">
+    <span class="material-symbols-outlined text-[20px] shrink-0 mt-0.5"></span>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-medium break-words"></p>
+    </div>
+    <button class="text-muted-foreground hover:text-foreground shrink-0" onclick="this.parentElement.remove()">
+      <span class="material-symbols-outlined text-[16px]">close</span>
+    </button>
+  </div>
+</template>
+
+{{if .Flash}}
+<script>
+  (function() {
+    var msg = {{.Flash}};
+    var lower = (msg || "").toLowerCase();
+    var tone = "default";
+    var icon = "info";
+    if (lower.indexOf("error") >= 0 || lower.indexOf("gagal") >= 0) { tone = "destructive"; icon = "error"; }
+    else if (lower.indexOf("success") >= 0 || lower.indexOf("berhasil") >= 0) { tone = "success"; icon = "check_circle"; }
+    else if (lower.indexOf("warning") >= 0 || lower.indexOf("peringatan") >= 0) { tone = "warning"; icon = "warning"; }
+    window.__flash = { msg: msg, tone: tone, icon: icon };
+  })();
+</script>
+{{end}}
+
+<script>
+  window.showToast = function(msg, tone, icon) {
+    tone = tone || "default";
+    icon = icon || "info";
+    var tpl = document.getElementById("toast-template");
+    var node = tpl.content.cloneNode(true);
+    var toast = node.querySelector(".toast");
+    var iconEl = node.querySelector(".material-symbols-outlined");
+    var msgEl = node.querySelector("p");
+    iconEl.textContent = icon;
+    iconEl.classList.add("text-" + (tone === "destructive" ? "destructive" : tone === "success" ? "success" : tone === "warning" ? "warning" : "primary"));
+    msgEl.textContent = msg;
+    document.getElementById("toast-container").appendChild(node);
+    var ttl = tone === "destructive" ? 6000 : 4000;
+    setTimeout(function() {
+      toast.classList.add("opacity-0", "transition-opacity", "duration-300");
+      setTimeout(function() { toast.remove(); }, 300);
+    }, ttl);
+  };
+  (function() {
+    if (window.__flash) {
+      window.showToast(window.__flash.msg, window.__flash.tone, window.__flash.icon);
+      window.__flash = null;
+    }
+  })();
+</script>
+{{end}}

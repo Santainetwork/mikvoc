@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MikroTik Manager - User List</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-error": "#ffffff",
+                      "on-primary-container": "#dad7ff",
+                      "on-tertiary-fixed": "#351000",
+                      "inverse-primary": "#c3c0ff",
+                      "secondary-fixed": "#d3e4fe",
+                      "tertiary-container": "#a44100",
+                      "background": "#f7f9fb",
+                      "on-background": "#191c1e",
+                      "on-primary": "#ffffff",
+                      "surface-container-highest": "#e0e3e5",
+                      "surface-container-low": "#f2f4f6",
+                      "primary-fixed-dim": "#c3c0ff",
+                      "surface-variant": "#e0e3e5",
+                      "inverse-on-surface": "#eff1f3",
+                      "outline-variant": "#c7c4d8",
+                      "error-container": "#ffdad6",
+                      "secondary": "#505f76",
+                      "primary-fixed": "#e2dfff",
+                      "surface-container-lowest": "#ffffff",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed-dim": "#ffb695",
+                      "surface-container": "#eceef0",
+                      "on-primary-fixed-variant": "#3323cc",
+                      "inverse-surface": "#2d3133",
+                      "on-secondary-container": "#54647a",
+                      "tertiary-fixed": "#ffdbcc",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "tertiary": "#7e3000",
+                      "surface-bright": "#f7f9fb",
+                      "on-tertiary-fixed-variant": "#7b2f00",
+                      "surface-container-high": "#e6e8ea",
+                      "on-surface": "#191c1e",
+                      "outline": "#777587",
+                      "on-secondary-fixed": "#0b1c30",
+                      "primary-container": "#4f46e5",
+                      "secondary-container": "#d0e1fb",
+                      "on-surface-variant": "#464555",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-container": "#ffd2be",
+                      "surface": "#f7f9fb",
+                      "surface-dim": "#d8dadc",
+                      "primary": "#3525cd",
+                      "on-primary-fixed": "#0f0069",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "on-tertiary": "#ffffff",
+                      "surface-tint": "#4d44e3"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "xl": "32px",
+                      "container-max": "1440px",
+                      "sm": "8px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "gutter": "20px",
+                      "sidebar-width": "260px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "h3": [
+                              "Inter"
+                      ],
+                      "h1": [
+                              "Inter"
+                      ],
+                      "mono-data": [
+                              "monospace"
+                      ],
+                      "h2": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h3": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h1": [
+                              "30px",
+                              {
+                                      "lineHeight": "38px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "mono-data": [
+                              "13px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "h2": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen w-full flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-[260px] bg-slate-900 dark:bg-black border-r border-slate-800 shadow-xl flex flex-col py-6 z-50">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-h3">M</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-white font-h3">MikroTik Admin</h1>
+<p class="text-slate-400 font-body-sm">Network Operator</p>
+</div>
+</div>
+<div class="px-4 mb-6">
+<button class="w-full bg-primary-container text-on-primary-container py-2.5 rounded-lg font-body-md font-semibold hover:bg-opacity-90 transition-all shadow-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                Generate Vouchers
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto px-2 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined">confirmation_number</span>
+<span class="font-body-md">Voucher Generator</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-semibold rounded-r-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-body-md">User List</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings_input_component</span>
+<span class="font-body-md">Profiles</span>
+</a>
+</div>
+<div class="mt-auto px-2 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-md">Logout</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-[260px] flex flex-col h-screen overflow-hidden bg-slate-950">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-40 w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800 shadow-sm flex items-center justify-between h-16 px-8">
+<div class="flex items-center gap-6">
+<span class="text-lg font-black text-white font-h2">MikroTik Manager</span>
+<nav class="hidden md:flex gap-6">
+<a class="text-slate-400 hover:text-indigo-300 transition-colors font-body-md font-medium" href="#">Network Status</a>
+<a class="text-slate-400 hover:text-indigo-300 transition-colors font-body-md font-medium" href="#">Logs</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">search</span>
+<input class="bg-slate-800 border-none text-slate-200 text-sm rounded-full pl-10 pr-4 py-1.5 focus:ring-1 focus:ring-indigo-500 w-48 placeholder-slate-500 font-body-sm" placeholder="Search..." type="text"/>
+</div>
+<button class="text-slate-400 hover:text-indigo-300 transition-colors opacity-80 hover:opacity-100">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-slate-400 hover:text-indigo-300 transition-colors opacity-80 hover:opacity-100">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<button class="ml-2 bg-slate-800 text-indigo-400 border border-slate-700 px-3 py-1.5 rounded text-sm font-medium hover:bg-slate-700 transition-colors font-body-sm">
+                    System Reboot
+                </button>
+<div class="w-8 h-8 rounded-full bg-slate-700 ml-2 border border-slate-600 overflow-hidden">
+<!-- Placeholder for Avatar -->
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 overflow-y-auto p-8 text-slate-200">
+<div class="max-w-[1440px] mx-auto">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="font-h1 text-white mb-2">User List</h2>
+<p class="font-body-md text-slate-400">Manage all active and inactive hotspot users.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg transition-colors font-body-sm font-medium">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                            Filter
+                        </button>
+<button class="flex items-center gap-2 bg-primary-container text-on-primary-container hover:bg-opacity-90 px-4 py-2 rounded-lg transition-colors font-body-sm font-medium">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                            Add User
+                        </button>
+</div>
+</div>
+<!-- Table Container -->
+<div class="bg-slate-900 border border-slate-800 rounded-xl shadow-lg overflow-hidden flex flex-col">
+<!-- Table Header Actions -->
+<div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+<div class="flex items-center gap-2">
+<select class="bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded focus:ring-indigo-500 focus:border-indigo-500 block p-2 py-1 font-body-sm">
+<option>Bulk Actions</option>
+<option>Delete Selected</option>
+<option>Disable Selected</option>
+</select>
+<button class="bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded text-sm transition-colors font-body-sm">Apply</button>
+</div>
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">search</span>
+<input class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg pl-10 pr-4 py-2 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-600 font-body-sm" placeholder="Search users..." type="text"/>
+</div>
+</div>
+<!-- Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-label-caps uppercase tracking-wider">
+<th class="p-4 w-12 text-center">
+<input class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-indigo-600 focus:ring-offset-slate-900" type="checkbox"/>
+</th>
+<th class="p-4 font-semibold">Username</th>
+<th class="p-4 font-semibold">Profile</th>
+<th class="p-4 font-semibold text-right">Uptime</th>
+<th class="p-4 font-semibold text-right">Bytes In/Out</th>
+<th class="p-4 font-semibold">Status</th>
+<th class="p-4 font-semibold text-center w-20">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-800/50">
+<tr class="hover:bg-slate-800/30 transition-colors group">
+<td class="p-4 text-center">
+<input class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-indigo-600 focus:ring-offset-slate-900" type="checkbox"/>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-indigo-900/50 text-indigo-300 flex items-center justify-center font-bold text-sm">
+                                                JD
+                                            </div>
+<div>
+<div class="font-body-md font-medium text-slate-200">jdoe_123</div>
+<div class="font-body-sm text-slate-500">10.0.0.15</div>
+</div>
+</div>
+</td>
+<td class="p-4 font-body-sm text-slate-300">1Day-5GB</td>
+<td class="p-4 text-right font-mono-data text-slate-400">12h 45m</td>
+<td class="p-4 text-right font-mono-data text-slate-400">1.2G / 4.5G</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-900/30 text-emerald-400 border border-emerald-800/50">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            Active
+                                        </span>
+</td>
+<td class="p-4 text-center">
+<button class="text-slate-500 hover:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-800/30 transition-colors group">
+<td class="p-4 text-center">
+<input class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-indigo-600 focus:ring-offset-slate-900" type="checkbox"/>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-amber-900/50 text-amber-300 flex items-center justify-center font-bold text-sm">
+                                                SA
+                                            </div>
+<div>
+<div class="font-body-md font-medium text-slate-200">sarah_a</div>
+<div class="font-body-sm text-slate-500">10.0.0.42</div>
+</div>
+</div>
+</td>
+<td class="p-4 font-body-sm text-slate-300">7Days-Unl</td>
+<td class="p-4 text-right font-mono-data text-slate-400">3d 14h</td>
+<td class="p-4 text-right font-mono-data text-slate-400">15G / 85G</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-900/30 text-emerald-400 border border-emerald-800/50">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            Active
+                                        </span>
+</td>
+<td class="p-4 text-center">
+<button class="text-slate-500 hover:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-800/30 transition-colors group opacity-75">
+<td class="p-4 text-center">
+<input class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-indigo-600 focus:ring-offset-slate-900" type="checkbox"/>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-sm">
+                                                GT
+                                            </div>
+<div>
+<div class="font-body-md font-medium text-slate-400 line-through">guest_temp</div>
+<div class="font-body-sm text-slate-600">--</div>
+</div>
+</div>
+</td>
+<td class="p-4 font-body-sm text-slate-500">1Hour-Trial</td>
+<td class="p-4 text-right font-mono-data text-slate-500">1h 00m</td>
+<td class="p-4 text-right font-mono-data text-slate-500">200M / 1.5G</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-900/30 text-rose-400 border border-rose-800/50">
+<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                                            Expired
+                                        </span>
+</td>
+<td class="p-4 text-center">
+<button class="text-slate-500 hover:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-slate-800 bg-slate-900/50 flex items-center justify-between">
+<div class="font-body-sm text-slate-500">
+                            Showing <span class="font-medium text-slate-300">1</span> to <span class="font-medium text-slate-300">3</span> of <span class="font-medium text-slate-300">42</span> results
+                        </div>
+<div class="flex gap-1">
+<button class="px-3 py-1 rounded border border-slate-800 bg-slate-900 text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-colors disabled:opacity-50">
+<span class="material-symbols-outlined text-[18px] align-middle">chevron_left</span>
+</button>
+<button class="px-3 py-1 rounded bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 font-body-sm font-medium">1</button>
+<button class="px-3 py-1 rounded border border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-300 transition-colors font-body-sm">2</button>
+<button class="px-3 py-1 rounded border border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-300 transition-colors font-body-sm">3</button>
+<span class="px-2 py-1 text-slate-600">...</span>
+<button class="px-3 py-1 rounded border border-slate-800 bg-slate-900 text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-colors">
+<span class="material-symbols-outlined text-[18px] align-middle">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

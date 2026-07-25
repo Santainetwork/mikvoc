@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MikroTik Manager - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-error": "#ffffff",
+                      "on-primary-container": "#dad7ff",
+                      "on-tertiary-fixed": "#351000",
+                      "inverse-primary": "#c3c0ff",
+                      "secondary-fixed": "#d3e4fe",
+                      "tertiary-container": "#a44100",
+                      "background": "#f7f9fb",
+                      "on-background": "#191c1e",
+                      "on-primary": "#ffffff",
+                      "surface-container-highest": "#e0e3e5",
+                      "surface-container-low": "#f2f4f6",
+                      "primary-fixed-dim": "#c3c0ff",
+                      "surface-variant": "#e0e3e5",
+                      "inverse-on-surface": "#eff1f3",
+                      "outline-variant": "#c7c4d8",
+                      "error-container": "#ffdad6",
+                      "secondary": "#505f76",
+                      "primary-fixed": "#e2dfff",
+                      "surface-container-lowest": "#ffffff",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed-dim": "#ffb695",
+                      "surface-container": "#eceef0",
+                      "on-primary-fixed-variant": "#3323cc",
+                      "inverse-surface": "#2d3133",
+                      "on-secondary-container": "#54647a",
+                      "tertiary-fixed": "#ffdbcc",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "tertiary": "#7e3000",
+                      "surface-bright": "#f7f9fb",
+                      "on-tertiary-fixed-variant": "#7b2f00",
+                      "surface-container-high": "#e6e8ea",
+                      "on-surface": "#191c1e",
+                      "outline": "#777587",
+                      "on-secondary-fixed": "#0b1c30",
+                      "primary-container": "#4f46e5",
+                      "secondary-container": "#d0e1fb",
+                      "on-surface-variant": "#464555",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-container": "#ffd2be",
+                      "surface": "#f7f9fb",
+                      "surface-dim": "#d8dadc",
+                      "primary": "#3525cd",
+                      "on-primary-fixed": "#0f0069",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "on-tertiary": "#ffffff",
+                      "surface-tint": "#4d44e3"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "xl": "32px",
+                      "container-max": "1440px",
+                      "sm": "8px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "gutter": "20px",
+                      "sidebar-width": "260px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "h3": [
+                              "Inter"
+                      ],
+                      "h1": [
+                              "Inter"
+                      ],
+                      "mono-data": [
+                              "monospace"
+                      ],
+                      "h2": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h3": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "h1": [
+                              "30px",
+                              {
+                                      "lineHeight": "38px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "mono-data": [
+                              "13px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "h2": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body { background-color: #0f172a; color: #f8fafc; } /* Enforcing slate-900 background for the dark aesthetic requested */
+    </style>
+</head>
+<body class="font-body-md text-body-md bg-slate-900 min-h-screen">
+<!-- SideNavBar -->
+<nav class="bg-slate-900 dark:bg-black font-inter text-sm antialiased fixed left-0 top-0 h-screen w-[260px] border-r border-slate-800 shadow-xl flex flex-col h-full py-6 z-50 hidden md:flex">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-slate-800 border border-slate-700">
+<img alt="Admin Avatar" class="w-full h-full object-cover" data-alt="A close up portrait of a male professional with short dark hair and a slight smile. He is wearing a dark suit jacket over a light blue collared shirt. The lighting is soft and natural, suggesting an office environment. The image is cropped tightly around his face and shoulders, conveying approachability and competence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgIqfIz9GPnoAUroapJd1Oczqx01OnTeLBu6e0-HuCdV01f37rmu3tosHACGuWTAZNvUnRHQjfKroLxrJPj9fuAjq5ka9vWK7TSV1rvtWOWw-BBIeHi2bpsmK3M7lgKYRGf8iS-mJhV4_YEryHMSBo-kTrkAImNbvX_bOmgk6nlCtzGxKFZcV1jkU1z46vpkmzuM_45K8CGftIVPTfKNsyk-4j_rOA7XZITibIVL-4wOZecUrjNrqjk1CbMiXjCTe_xKd7H49IvzZc"/>
+</div>
+<div>
+<h2 class="text-white font-bold tracking-tight text-base">MikroTik Admin</h2>
+<p class="text-slate-400 text-xs">Network Operator</p>
+</div>
+</div>
+<div class="px-4 mb-6">
+<button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                Generate Vouchers
+            </button>
+</div>
+<div class="flex-1 flex flex-col gap-1 px-2 overflow-y-auto">
+<!-- Active Tab -->
+<a class="flex items-center gap-3 px-4 py-3 bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-semibold rounded-r-lg scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 rounded-lg scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined">confirmation_number</span>
+                Voucher Generator
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 rounded-lg scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined">group</span>
+                User List
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 rounded-lg scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined">settings_input_component</span>
+                Profiles
+            </a>
+</div>
+<div class="mt-auto px-2 pt-4 border-t border-slate-800 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 rounded-lg scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 rounded-lg scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined">logout</span>
+                Logout
+            </a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="md:ml-[260px] min-h-screen flex flex-col relative">
+<!-- TopAppBar -->
+<header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-indigo-600 dark:text-indigo-400 font-inter text-sm font-medium sticky top-0 z-40 w-full shadow-sm flex items-center justify-between h-16 px-8 max-w-[1440px] mx-auto border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-8">
+<!-- Mobile menu button (hidden on desktop) -->
+<button class="md:hidden text-slate-400 hover:text-white">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="text-lg font-black text-slate-900 dark:text-white hidden md:block">MikroTik Manager</h1>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors py-5 opacity-80 hover:opacity-100" href="#">Network Status</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors py-5 opacity-80 hover:opacity-100" href="#">Logs</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+<input class="bg-slate-800/50 border border-slate-700 text-white text-sm rounded-full pl-10 pr-4 py-1.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-48 transition-all" placeholder="Search network..." type="text"/>
+</div>
+<div class="flex items-center gap-2 border-l border-slate-700 pl-4">
+<button class="text-slate-400 hover:text-indigo-300 transition-colors p-2 rounded-full hover:bg-slate-800/50 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+</button>
+<button class="text-slate-400 hover:text-indigo-300 transition-colors p-2 rounded-full hover:bg-slate-800/50">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+</div>
+<button class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium py-1.5 px-4 rounded-lg shadow-sm transition-colors text-xs hidden sm:flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">restart_alt</span>
+                    System Reboot
+                </button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-slate-800 border border-slate-700 ml-2 md:hidden">
+<img alt="Admin Profile" class="w-full h-full object-cover" data-alt="A close up portrait of a male professional with short dark hair and a slight smile. He is wearing a dark suit jacket over a light blue collared shirt." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAN8o3oiM7xCF8ImjQgF63-FYpl5pKHmvWWjzvlItd7fqd3JYLa08oXFxe1Xn03DMdLDGbf8UGb78_vC8P8ufq7TITDZJwfe-JF2ajC8DNJ68uI3L7DS4mb489HiA5glNkbOVtNk54JSpG-ufA0BEdi71lJZKrTynSo0lvt5kPSl5DmUjN68CN2KrY_aJIw8FnS1Nx7SZwsEyd2AZKZ-Z850R-QpmQ8EHx9SZ8dvQfZSx78WMQycHxMkP41kvqzmNGUq0RYDU1mqjFI"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 p-6 md:p-8 max-w-[1440px] mx-auto w-full">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="font-h2 text-h2 text-white mb-1">Overview</h2>
+<p class="font-body-sm text-body-sm text-slate-400">System health and active connections across all interfaces.</p>
+</div>
+<div class="text-slate-400 font-mono-data text-mono-data flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Uptime: 45d 12h 34m
+                </div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
+<!-- Metric Card 1 -->
+<div class="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm relative overflow-hidden group">
+<div class="absolute -right-6 -top-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all duration-500"></div>
+<div class="flex justify-between items-start mb-4">
+<p class="font-label-caps text-label-caps text-slate-400 uppercase">Active Users</p>
+<span class="material-symbols-outlined text-indigo-400 bg-indigo-400/10 p-2 rounded-lg">group</span>
+</div>
+<div class="flex items-baseline gap-2">
+<h3 class="font-h1 text-h1 text-white">1,248</h3>
+<span class="font-body-sm text-body-sm text-emerald-400 flex items-center"><span class="material-symbols-outlined text-[14px]">arrow_upward</span> 12%</span>
+</div>
+<div class="mt-4 w-full bg-slate-700/50 rounded-full h-1.5">
+<div class="bg-indigo-500 h-1.5 rounded-full" style="width: 65%"></div>
+</div>
+</div>
+<!-- Metric Card 2 -->
+<div class="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm relative overflow-hidden group">
+<div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all duration-500"></div>
+<div class="flex justify-between items-start mb-4">
+<p class="font-label-caps text-label-caps text-slate-400 uppercase">Current Bandwidth</p>
+<span class="material-symbols-outlined text-emerald-400 bg-emerald-400/10 p-2 rounded-lg">speed</span>
+</div>
+<div class="flex items-baseline gap-2">
+<h3 class="font-h1 text-h1 text-white">450</h3>
+<span class="font-body-sm text-body-sm text-slate-300">Mbps</span>
+</div>
+<div class="mt-4 flex gap-1">
+<!-- Simulated sparkline -->
+<div class="h-8 w-full flex items-end gap-1">
+<div class="bg-emerald-500/40 w-full h-[30%] rounded-t-sm"></div>
+<div class="bg-emerald-500/60 w-full h-[50%] rounded-t-sm"></div>
+<div class="bg-emerald-500/40 w-full h-[40%] rounded-t-sm"></div>
+<div class="bg-emerald-500/80 w-full h-[70%] rounded-t-sm"></div>
+<div class="bg-emerald-500/60 w-full h-[60%] rounded-t-sm"></div>
+<div class="bg-emerald-500 w-full h-[90%] rounded-t-sm"></div>
+<div class="bg-emerald-500/80 w-full h-[80%] rounded-t-sm"></div>
+</div>
+</div>
+</div>
+<!-- Metric Card 3 -->
+<div class="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm relative overflow-hidden group">
+<div class="absolute -right-6 -top-6 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all duration-500"></div>
+<div class="flex justify-between items-start mb-4">
+<p class="font-label-caps text-label-caps text-slate-400 uppercase">CPU Load</p>
+<span class="material-symbols-outlined text-amber-400 bg-amber-400/10 p-2 rounded-lg">memory</span>
+</div>
+<div class="flex items-baseline gap-2">
+<h3 class="font-h1 text-h1 text-white">24%</h3>
+<span class="font-body-sm text-body-sm text-amber-400 flex items-center"><span class="material-symbols-outlined text-[14px]">arrow_downward</span> 5%</span>
+</div>
+<div class="mt-4 flex justify-between font-mono-data text-[10px] text-slate-500">
+<span>Core 1: 22%</span>
+<span>Core 2: 26%</span>
+</div>
+</div>
+<!-- Metric Card 4 -->
+<div class="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm relative overflow-hidden group">
+<div class="absolute -right-6 -top-6 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/20 transition-all duration-500"></div>
+<div class="flex justify-between items-start mb-4">
+<p class="font-label-caps text-label-caps text-slate-400 uppercase">Failed Logins</p>
+<span class="material-symbols-outlined text-rose-400 bg-rose-400/10 p-2 rounded-lg">gpp_bad</span>
+</div>
+<div class="flex items-baseline gap-2">
+<h3 class="font-h1 text-h1 text-white">12</h3>
+<span class="font-body-sm text-body-sm text-slate-300">Last 24h</span>
+</div>
+<p class="mt-4 font-body-sm text-body-sm text-slate-400">3 IPs blocked automatically.</p>
+</div>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<!-- Main Graph Area -->
+<div class="xl:col-span-2 bg-slate-800/40 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm flex flex-col min-h-[400px]">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-h3 text-h3 text-white">Traffic Analysis</h3>
+<div class="flex gap-2">
+<button class="px-3 py-1 text-xs font-medium rounded-md bg-indigo-600 text-white">24h</button>
+<button class="px-3 py-1 text-xs font-medium rounded-md bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">7d</button>
+<button class="px-3 py-1 text-xs font-medium rounded-md bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">30d</button>
+</div>
+</div>
+<!-- Simulated Graph Area -->
+<div class="flex-1 relative w-full border-b border-l border-slate-700/50 mb-6 pb-2 pl-2">
+<!-- Y-axis labels -->
+<div class="absolute -left-8 top-0 h-full flex flex-col justify-between text-[10px] text-slate-500 font-mono-data py-2">
+<span>1G</span>
+<span>750M</span>
+<span>500M</span>
+<span>250M</span>
+<span>0</span>
+</div>
+<!-- Grid lines -->
+<div class="absolute inset-0 flex flex-col justify-between pl-2">
+<div class="w-full border-t border-slate-700/30"></div>
+<div class="w-full border-t border-slate-700/30"></div>
+<div class="w-full border-t border-slate-700/30"></div>
+<div class="w-full border-t border-slate-700/30"></div>
+<div class="w-full border-t border-transparent"></div>
+</div>
+<!-- Graph Path (CSS drawn for demo) -->
+<div class="absolute inset-0 pl-2 pt-4 flex items-end">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<defs>
+<lineargradient id="gradient-rx" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#4f46e5" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#4f46e5" stop-opacity="0"></stop>
+</lineargradient>
+<lineargradient id="gradient-tx" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#10b981" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#10b981" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<!-- RX Data -->
+<path d="M0,80 L10,75 L20,85 L30,60 L40,65 L50,40 L60,50 L70,30 L80,45 L90,20 L100,30 L100,100 L0,100 Z" fill="url(#gradient-rx)"></path>
+<polyline fill="none" points="0,80 10,75 20,85 30,60 40,65 50,40 60,50 70,30 80,45 90,20 100,30" stroke="#4f46e5" stroke-width="2" vector-effect="non-scaling-stroke"></polyline>
+<!-- TX Data -->
+<path d="M0,90 L10,88 L20,95 L30,80 L40,85 L50,70 L60,75 L70,60 L80,65 L90,50 L100,55 L100,100 L0,100 Z" fill="url(#gradient-tx)"></path>
+<polyline fill="none" points="0,90 10,88 20,95 30,80 40,85 50,70 60,75 70,60 80,65 90,50 100,55" stroke="#10b981" stroke-width="2" vector-effect="non-scaling-stroke"></polyline>
+</svg>
+</div>
+</div>
+<!-- X-axis labels & Legend -->
+<div class="flex justify-between items-center px-2">
+<div class="flex gap-8 text-[10px] text-slate-500 font-mono-data">
+<span>00:00</span>
+<span>04:00</span>
+<span>08:00</span>
+<span>12:00</span>
+<span>16:00</span>
+<span>20:00</span>
+</div>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-sm bg-indigo-500"></span>
+<span class="text-xs text-slate-400">RX (Download)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-sm bg-emerald-500"></span>
+<span class="text-xs text-slate-400">TX (Upload)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Activity Feed -->
+<div class="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6 backdrop-blur-sm flex flex-col h-full">
+<h3 class="font-h3 text-h3 text-white mb-6">Recent Activity</h3>
+<div class="flex-1 overflow-y-auto pr-2 space-y-4">
+<!-- Feed Item -->
+<div class="flex gap-4 relative">
+<div class="absolute left-[15px] top-8 bottom-[-16px] w-[2px] bg-slate-700/50 last:hidden"></div>
+<div class="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 z-10">
+<span class="material-symbols-outlined text-[16px] text-emerald-400">login</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-white">Voucher <span class="font-mono-data text-indigo-400">VIP-8492</span> authenticated</p>
+<p class="text-[11px] text-slate-500 mt-1">IP: 192.168.88.24 • 2 mins ago</p>
+</div>
+</div>
+<!-- Feed Item -->
+<div class="flex gap-4 relative">
+<div class="absolute left-[15px] top-8 bottom-[-16px] w-[2px] bg-slate-700/50 last:hidden"></div>
+<div class="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 z-10">
+<span class="material-symbols-outlined text-[16px] text-amber-400">warning</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-white">High CPU usage detected</p>
+<p class="text-[11px] text-slate-500 mt-1">Router OS • 15 mins ago</p>
+</div>
+</div>
+<!-- Feed Item -->
+<div class="flex gap-4 relative">
+<div class="absolute left-[15px] top-8 bottom-[-16px] w-[2px] bg-slate-700/50 last:hidden"></div>
+<div class="w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 z-10">
+<span class="material-symbols-outlined text-[16px] text-indigo-400">confirmation_number</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-white">Batch of 50 vouchers generated</p>
+<p class="text-[11px] text-slate-500 mt-1">Profile: 1 Day / 2GB • 1 hour ago</p>
+</div>
+</div>
+<!-- Feed Item -->
+<div class="flex gap-4 relative">
+<div class="absolute left-[15px] top-8 bottom-[-16px] w-[2px] bg-slate-700/50 last:hidden"></div>
+<div class="w-8 h-8 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0 z-10">
+<span class="material-symbols-outlined text-[16px] text-rose-400">block</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-white">Failed Winbox login attempt</p>
+<p class="text-[11px] text-slate-500 mt-1">IP: 203.0.113.45 • 2 hours ago</p>
+</div>
+</div>
+<!-- Feed Item -->
+<div class="flex gap-4 relative">
+<div class="w-8 h-8 rounded-full bg-slate-700/50 border border-slate-600 flex items-center justify-center shrink-0 z-10">
+<span class="material-symbols-outlined text-[16px] text-slate-400">update</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-white">System backup completed</p>
+<p class="text-[11px] text-slate-500 mt-1">Auto-backup • 5 hours ago</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-4 py-2 border border-slate-700 text-slate-300 text-xs rounded-lg hover:bg-slate-800 transition-colors">View All Logs</button>
+</div>
+</div>
+</main>
+</div>
+</body></html>

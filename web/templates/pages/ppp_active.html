@@ -1,0 +1,75 @@
+{{template "layout" .}}
+{{define "content"}}
+
+<div class="mb-6 flex items-center justify-between flex-wrap gap-3">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">PPP Aktif</h1>
+    <p class="text-muted-foreground text-sm mt-0.5">Sesi PPPoE yang sedang online</p>
+  </div>
+  <button onclick="location.reload()" class="btn btn-outline btn-md">
+    <span class="material-symbols-outlined text-[16px]">refresh</span>
+    Refresh
+  </button>
+</div>
+
+{{with .Data}}
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto scrollbar-thin">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Service</th>
+          <th>Address</th>
+          <th>Caller ID</th>
+          <th>Uptime</th>
+          <th class="text-right">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range $i, $a := .Active}}
+        <tr>
+          <td class="text-muted-foreground text-xs">{{add $i 1}}</td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-success animate-pulse shrink-0"></span>
+              <span class="font-semibold">{{$a.Name}}</span>
+            </div>
+          </td>
+          <td><span class="badge badge-secondary">{{$a.Service}}</span></td>
+          <td><code class="text-primary font-mono text-xs">{{$a.Address}}</code></td>
+          <td class="font-mono text-xs text-muted-foreground">{{if $a.CallerID}}{{$a.CallerID}}{{else}}—{{end}}</td>
+          <td class="font-mono text-xs">{{$a.Uptime}}</td>
+          <td class="text-right">
+            <form method="POST" action="/ppp/active/kick" class="inline" data-loading data-loading-text="Kick session...">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <input type="hidden" name="id" value="{{$a.ID}}"/>
+              <button type="submit" data-confirm="Kick {{$a.Name}}?" class="btn btn-destructive btn-sm">
+                <span class="material-symbols-outlined text-[14px]">logout</span>Kick
+              </button>
+            </form>
+          </td>
+        </tr>
+        {{else}}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <span class="material-symbols-outlined text-muted-foreground text-[40px]">lan</span>
+              <p class="text-muted-foreground text-sm">Tidak ada sesi PPP aktif.</p>
+            </div>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  <div class="px-6 py-3 border-t border-border">
+    <span class="text-xs text-muted-foreground">Total: <span class="text-foreground font-medium">{{len .Active}}</span> sesi</span>
+  </div>
+</div>
+{{end}}
+{{end}}
+
+{{define "scripts"}}
+{{end}}

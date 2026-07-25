@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Voucher Generator Engine</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#dad7ff",
+                        "on-tertiary-fixed": "#351000",
+                        "inverse-primary": "#c3c0ff",
+                        "secondary-fixed": "#d3e4fe",
+                        "tertiary-container": "#a44100",
+                        "background": "#f7f9fb",
+                        "on-background": "#191c1e",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container-low": "#f2f4f6",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "surface-variant": "#e0e3e5",
+                        "inverse-on-surface": "#eff1f3",
+                        "outline-variant": "#c7c4d8",
+                        "error-container": "#ffdad6",
+                        "secondary": "#505f76",
+                        "primary-fixed": "#e2dfff",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffb695",
+                        "surface-container": "#eceef0",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "inverse-surface": "#2d3133",
+                        "on-secondary-container": "#54647a",
+                        "tertiary-fixed": "#ffdbcc",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "tertiary": "#7e3000",
+                        "surface-bright": "#f7f9fb",
+                        "on-tertiary-fixed-variant": "#7b2f00",
+                        "surface-container-high": "#e6e8ea",
+                        "on-surface": "#191c1e",
+                        "outline": "#777587",
+                        "on-secondary-fixed": "#0b1c30",
+                        "primary-container": "#4f46e5",
+                        "secondary-container": "#d0e1fb",
+                        "on-surface-variant": "#464555",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#ffd2be",
+                        "surface": "#f7f9fb",
+                        "surface-dim": "#d8dadc",
+                        "primary": "#3525cd",
+                        "on-primary-fixed": "#0f0069",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#4d44e3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "xl": "32px",
+                        "container-max": "1440px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "gutter": "20px",
+                        "sidebar-width": "260px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "h3": ["Inter"],
+                        "h1": ["Inter"],
+                        "mono-data": ["monospace"],
+                        "h2": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "h3": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "h1": ["30px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "mono-data": ["13px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "h2": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex">
+<!-- SideNavBar (Shared Component) -->
+<nav class="bg-slate-900 dark:bg-black font-inter text-sm antialiased fixed left-0 top-0 h-screen w-[260px] border-r border-slate-800 shadow-xl flex flex-col h-full py-6 z-50">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold">M</div>
+<div>
+<h2 class="text-xl font-bold tracking-tight text-white">MikroTik Admin</h2>
+<p class="text-slate-400 text-xs">Network Operator</p>
+</div>
+</div>
+<div class="px-4 mb-6">
+<button class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shadow-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+                Generate Vouchers
+            </button>
+</div>
+<div class="flex-1 flex flex-col gap-1 px-2">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<!-- Active Tab -->
+<a class="flex items-center gap-3 px-4 py-3 bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-semibold scale-95 active:scale-100 transition-transform rounded-r-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">confirmation_number</span>
+                Voucher Generator
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+                User List
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings_input_component</span>
+                Profiles
+            </a>
+</div>
+<div class="px-2 mt-auto flex flex-col gap-1 border-t border-slate-800 pt-4">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 duration-150 rounded-lg" href="#">
+<span class="material-symbols-outlined">logout</span>
+                Logout
+            </a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col min-w-0 ml-[260px]">
+<!-- TopAppBar (Shared Component) -->
+<header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-indigo-600 dark:text-indigo-400 font-inter text-sm font-medium sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between h-16 px-8 max-w-[1440px]">
+<div class="flex items-center gap-8">
+<h1 class="text-lg font-black text-slate-900 dark:text-white">MikroTik Manager</h1>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors" href="#">Network Status</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors" href="#">Logs</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors opacity-80 hover:opacity-100">
+<span class="material-symbols-outlined">search</span>
+</button>
+<div class="w-px h-6 bg-slate-200 dark:bg-slate-800"></div>
+<button class="text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors opacity-80 hover:opacity-100">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors opacity-80 hover:opacity-100">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<button class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors text-xs font-semibold ml-2">
+                    System Reboot
+                </button>
+<img alt="Admin Profile" class="w-8 h-8 rounded-full border border-slate-200" data-alt="A close-up, professional portrait of a network administrator working in a bright, modern office. The lighting is soft and even, highlighting a serious but approachable expression. The overall color palette is light and clean, with subtle indigo and white tones reflecting a high-tech corporate environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEje3vqb-B5Plf0kmqIA4ZjYFhhfeSbV6NTnWQfqX0bWFN3pv9u-h-Dpr5dTgVVZ5mP5IpSo7UvOfRjycbPNmGJZUGaOjBvFPXpm3AdT3f6iEUU-Zg3JvSliXwYdssq-yBoDqpV4qzBD_5eiUlS5q6eLmh_3H1YfxHGUiTOTPhzQnGjKugPEZpGtcjVzbcyA074X40NEWqNQY9ua1eGLzivMplgFGa3fEOb9ul6aJJeW7QWYgMAcjiI-nBTqcE4cTJISGexfhQjZRu"/>
+</div>
+</header>
+<!-- Canvas Area -->
+<main class="flex-1 p-xl max-w-container-max mx-auto w-full">
+<div class="mb-lg">
+<h2 class="font-h1 text-h1 text-on-surface mb-xs">Voucher Generation Engine</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Configure parameters to generate secure, randomized access codes for the network.</p>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-lg items-start">
+<!-- Left Column: Form Controls (Spans 8 cols) -->
+<div class="xl:col-span-8 flex flex-col gap-lg">
+<!-- Core Parameters Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-lg">
+<div class="flex items-center gap-3 border-b border-surface-dim pb-md mb-md">
+<span class="material-symbols-outlined text-primary">tune</span>
+<h3 class="font-h3 text-h3 text-on-surface">Core Parameters</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase">Server Destination</label>
+<select class="w-full bg-surface border border-outline-variant rounded-lg px-md py-sm font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow">
+<option>Hotspot Network (Guest)</option>
+<option>PPPoE Server</option>
+<option>Radius Proxy</option>
+</select>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase">Quantity to Generate</label>
+<div class="relative">
+<input class="w-full bg-surface border border-outline-variant rounded-lg pl-md pr-xl py-sm font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" type="number" value="50"/>
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">pin</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Profile & Limits Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-lg">
+<div class="flex items-center gap-3 border-b border-surface-dim pb-md mb-md">
+<span class="material-symbols-outlined text-primary">speed</span>
+<h3 class="font-h3 text-h3 text-on-surface">Bandwidth &amp; Profile Alignment</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-md">
+<div class="flex flex-col gap-xs md:col-span-3">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase">Assigned User Profile</label>
+<select class="w-full bg-surface border border-outline-variant rounded-lg px-md py-sm font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow">
+<option>1 Day / 5Mbps / Uncapped</option>
+<option>7 Days / 10Mbps / 10GB</option>
+<option>30 Days / 20Mbps / 50GB</option>
+<option>Custom Profile...</option>
+</select>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase">Time Limit</label>
+<div class="flex items-center border border-outline-variant rounded-lg bg-surface overflow-hidden focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-shadow">
+<input class="w-full bg-transparent border-none px-md py-sm font-body-md text-on-surface focus:ring-0" placeholder="e.g. 24" type="text"/>
+<span class="bg-surface-container px-sm py-sm text-on-surface-variant font-label-caps text-label-caps border-l border-outline-variant">HOURS</span>
+</div>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase">Data Limit</label>
+<div class="flex items-center border border-outline-variant rounded-lg bg-surface overflow-hidden focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-shadow">
+<input class="w-full bg-transparent border-none px-md py-sm font-body-md text-on-surface focus:ring-0" placeholder="e.g. 1024" type="text"/>
+<span class="bg-surface-container px-sm py-sm text-on-surface-variant font-label-caps text-label-caps border-l border-outline-variant">MB</span>
+</div>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase">Prefix (Optional)</label>
+<input class="w-full bg-surface border border-outline-variant rounded-lg px-md py-sm font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" placeholder="NET-" type="text"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Preview & Action (Spans 4 cols) -->
+<div class="xl:col-span-4 flex flex-col gap-lg">
+<!-- Live Preview Card -->
+<div class="bg-surface-container-highest rounded-xl border border-surface-dim p-md flex flex-col items-center justify-center relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-md relative z-10">Live Output Preview</span>
+<!-- Literal Ticket Design -->
+<div class="bg-surface-container-lowest w-full max-w-[280px] rounded-lg border-2 border-outline-variant border-dashed p-md shadow-md relative z-10 flex flex-col items-center">
+<div class="w-full border-b border-surface-dim pb-sm mb-sm text-center">
+<h4 class="font-h3 text-h3 text-on-surface">WIFI ACCESS</h4>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Hotspot Network</p>
+</div>
+<div class="py-sm w-full text-center">
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-xs">Login Code</p>
+<div class="bg-surface-container px-md py-sm rounded-md border border-outline-variant inline-block">
+<span class="font-mono-data text-mono-data text-primary text-lg tracking-widest font-bold">NET-X7B9K2</span>
+</div>
+</div>
+<div class="w-full border-t border-surface-dim pt-sm mt-sm flex justify-between items-center px-sm">
+<div class="text-left">
+<p class="font-label-caps text-label-caps text-on-surface-variant">DURATION</p>
+<p class="font-body-sm text-body-sm text-on-surface font-semibold">1 Day</p>
+</div>
+<div class="text-right">
+<p class="font-label-caps text-label-caps text-on-surface-variant">PRICE</p>
+<p class="font-body-sm text-body-sm text-on-surface font-semibold">$5.00</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Area -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-lg flex flex-col gap-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">print</span>
+<span class="font-body-md text-body-md text-on-surface font-medium">Auto-Print</span>
+</div>
+<!-- Custom Toggle Switch -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">save</span>
+<span class="font-body-md text-body-md text-on-surface font-medium">Export CSV</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<hr class="border-surface-dim my-xs"/>
+<button class="w-full bg-primary hover:bg-primary-fixed-variant text-on-primary font-h3 text-h3 py-md rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[24px]">rocket_launch</span>
+                            Generate 50 Vouchers
+                        </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

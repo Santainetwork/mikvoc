@@ -1,0 +1,129 @@
+{{template "layout" .}}
+{{define "content"}}
+
+<div class="mb-6 flex items-center justify-between flex-wrap gap-3">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Generate PPP Secret</h1>
+    <p class="text-muted-foreground text-sm mt-0.5">Sequential name, password = username</p>
+  </div>
+  <a href="/ppp/secrets" class="btn btn-outline btn-md">
+    <span class="material-symbols-outlined text-[16px]">key</span>
+    Lihat Secrets
+  </a>
+</div>
+
+{{with .Data}}
+<div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
+  <div class="xl:col-span-3 card">
+    <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+      <span class="material-symbols-outlined text-primary text-[18px]">person_add</span>
+      <h3 class="text-sm font-semibold">Parameter</h3>
+    </div>
+    <div class="card-content">
+      <form method="POST" action="/ppp/generate" data-loading data-loading-text="Generate PPP secret... Jangan refresh.">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="label">Jumlah (Qty)</label>
+            <input type="number" name="qty" min="1" max="500" value="{{.LastOpts.Qty}}" class="input" required/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="label">Prefix</label>
+            <input type="text" name="prefix" value="{{.LastOpts.Prefix}}" placeholder="user" class="input"/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="label">Start number</label>
+            <input type="number" name="start" min="0" value="{{.LastOpts.Start}}" class="input" required/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="label">Padding digit</label>
+            <input type="number" name="pad" min="1" max="8" value="{{.LastOpts.Pad}}" class="input" required/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="label">Profile</label>
+            <select name="profile" class="input" required>
+              {{if not .Profiles}}
+              <option value="" disabled selected>— Belum ada profile PPP —</option>
+              {{end}}
+              {{range .Profiles}}
+              <option value="{{.Name}}" {{if eq .Name $.Data.LastOpts.Profile}}selected{{end}}>{{.Name}}{{if .RateLimit}} · {{.RateLimit}}{{end}}</option>
+              {{end}}
+            </select>
+          </div>
+          <div class="space-y-1.5">
+            <label class="label">Service</label>
+            <select name="service" class="input">
+              <option value="pppoe" {{if or (eq .LastOpts.Service "pppoe") (eq .LastOpts.Service "")}}selected{{end}}>pppoe</option>
+              <option value="any" {{if eq .LastOpts.Service "any"}}selected{{end}}>any</option>
+              <option value="pptp" {{if eq .LastOpts.Service "pptp"}}selected{{end}}>pptp</option>
+              <option value="l2tp" {{if eq .LastOpts.Service "l2tp"}}selected{{end}}>l2tp</option>
+              <option value="ovpn" {{if eq .LastOpts.Service "ovpn"}}selected{{end}}>ovpn</option>
+            </select>
+          </div>
+          <div class="space-y-1.5 col-span-2">
+            <label class="label">Comment / Batch label (opsional)</label>
+            <input type="text" name="comment" value="{{.LastOpts.Comment}}" placeholder="auto: ppp-PROFILE-MM.DD.YY" class="input"/>
+          </div>
+        </div>
+        <p class="text-xs text-muted-foreground mt-3">Password selalu sama dengan username. Nama yang sudah ada di-skip.</p>
+        <div class="mt-5 flex justify-end">
+          <button type="submit" class="btn btn-primary btn-md">
+            <span class="material-symbols-outlined text-[18px]">bolt</span>
+            Generate
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="xl:col-span-2 space-y-4">
+    <div class="card">
+      <div class="px-5 py-3 border-b border-border">
+        <h3 class="text-sm font-semibold">Preview nama</h3>
+      </div>
+      <div class="p-5">
+        <ul class="space-y-1 font-mono text-sm">
+          {{range .Preview}}
+          <li class="text-muted-foreground">{{.}} <span class="text-border">/</span> {{.}}</li>
+          {{else}}
+          <li class="text-muted-foreground text-xs">—</li>
+          {{end}}
+        </ul>
+      </div>
+    </div>
+
+    {{if .Result}}
+    <div class="card">
+      <div class="px-5 py-3 border-b border-border flex items-center justify-between">
+        <h3 class="text-sm font-semibold">Hasil ({{len .Result.Items}})</h3>
+        <span class="badge badge-secondary text-[10px]">{{.Result.Comment}}</span>
+      </div>
+      <div class="overflow-x-auto max-h-80">
+        <table class="table">
+          <thead>
+            <tr><th>Username</th><th>Password</th></tr>
+          </thead>
+          <tbody>
+            {{range .Result.Items}}
+            <tr>
+              <td class="font-mono text-xs">{{.Username}}</td>
+              <td class="font-mono text-xs">{{.Password}}</td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+      {{if gt .Result.Skipped 0}}
+      <div class="px-5 py-2 border-t border-border text-xs text-muted-foreground">
+        Skip {{.Result.Skipped}} nama yang sudah ada
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}
+{{end}}
+
+{{define "scripts"}}
+{{end}}

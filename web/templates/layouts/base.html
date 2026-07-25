@@ -1,0 +1,126 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="id" class="{{.Theme}}">
+<head>
+  {{template "head" .}}
+</head>
+<body class="bg-background text-foreground min-h-screen antialiased">
+
+  <div class="no-print">
+    {{template "sidebar" .}}
+  </div>
+
+  <!-- Main -->
+  <div class="md:ml-64 flex flex-col min-h-screen">
+    <div class="no-print">
+      {{template "topbar" .}}
+    </div>
+    <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 print:p-0">
+
+      {{block "content" .}}{{end}}
+    </main>
+  </div>
+
+  {{template "toasts" .}}
+
+  <script src="/static/js/main.js?v=busy1"></script>
+  <script>if(window.mikvocCSRF)mikvocCSRF.inject(document);</script>
+  <script>
+    // Theme toggle
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', function() {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      });
+    }
+
+    // Auto Refresh — smart reload: skip if user is interacting, preserve scroll.
+    (function() {
+      const refreshSel = document.getElementById('auto-refresh');
+      if (!refreshSel) return;
+
+      let refreshTimer;
+      const saved = localStorage.getItem('autoRefresh') || '0';
+      refreshSel.value = saved;
+
+      refreshSel.addEventListener('change', () => {
+        localStorage.setItem('autoRefresh', refreshSel.value);
+        if (refreshSel.value === '0') return;
+        scheduleNext(parseInt(refreshSel.value, 10));
+      });
+
+      function isUserBusy() {
+        const active = document.activeElement;
+        if (active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) return true;
+        if (active && active.isContentEditable) return true;
+        if (document.querySelectorAll('.modal-backdrop').length > 0) return true;
+        if (document.querySelector('input[type="checkbox"]:checked[data-preserve]')) return true;
+        const dirtyForms = document.querySelectorAll('form[data-dirty]');
+        if (dirtyForms.length > 0) return true;
+        return false;
+      }
+
+      function isFormDirty() {
+        const forms = document.querySelectorAll('form');
+        for (const form of forms) {
+          for (const el of form.elements) {
+            if (el.type === 'checkbox' || el.type === 'radio') {
+              if (el.checked !== el.defaultChecked) return true;
+            } else if (el.value !== el.defaultValue) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      document.addEventListener('input', (e) => {
+        if (e.target && e.target.form) {
+          if (isFormDirty()) e.target.form.setAttribute('data-dirty', '');
+          else e.target.form.removeAttribute('data-dirty');
+        }
+      });
+      document.addEventListener('change', (e) => {
+        if (e.target && e.target.form) {
+          if (isFormDirty()) e.target.form.setAttribute('data-dirty', '');
+          else e.target.form.removeAttribute('data-dirty');
+        }
+      });
+
+      function doRefresh() {
+        if (isUserBusy()) {
+          scheduleNext(5);
+          return;
+        }
+        try {
+          sessionStorage.setItem('mikvocScrollY', String(window.scrollY));
+          sessionStorage.setItem('mikvocScrollX', String(window.scrollX));
+        } catch (e) {}
+        window.location.reload();
+      }
+
+      function scheduleNext(secs) {
+        if (refreshTimer) clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(doRefresh, secs * 1000);
+      }
+
+      // Restore scroll position after reload.
+      try {
+        const sx = sessionStorage.getItem('mikvocScrollX');
+        const sy = sessionStorage.getItem('mikvocScrollY');
+        if (sy !== null) window.scrollTo(parseInt(sx || '0', 10), parseInt(sy, 10));
+        sessionStorage.removeItem('mikvocScrollX');
+        sessionStorage.removeItem('mikvocScrollY');
+      } catch (e) {}
+
+      if (saved !== '0') {
+        const secs = parseInt(saved, 10);
+        if (secs > 0) scheduleNext(secs);
+      }
+    })();
+  </script>
+  {{block "scripts" .}}{{end}}
+</body>
+</html>
+{{end}}

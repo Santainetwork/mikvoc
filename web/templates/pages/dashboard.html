@@ -1,0 +1,253 @@
+{{template "layout" .}}
+
+{{define "content"}}
+<!-- Page header -->
+<div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
+    <p class="text-muted-foreground text-sm mt-0.5">Ringkasan sistem router Mikrotik</p>
+  </div>
+  {{if not .Connected}}
+  <a href="/settings" class="btn btn-outline btn-md">
+    <span class="material-symbols-outlined text-[18px]">warning</span>
+    Konfigurasi Router
+  </a>
+  {{end}}
+</div>
+
+{{with .Data}}
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <a href="/hotspot/active" class="card p-5 flex items-center gap-4 hover:border-primary/50 transition-colors">
+    <div class="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+      <span class="material-symbols-outlined text-primary text-[20px] filled">wifi</span>
+    </div>
+    <div class="min-w-0">
+      <div class="text-2xl font-bold" id="stat-active">{{.ActiveCount}}</div>
+      <div class="text-xs text-muted-foreground font-medium">Pengguna Aktif</div>
+    </div>
+  </a>
+  <a href="/hotspot/users" class="card p-5 flex items-center gap-4 hover:border-primary/50 transition-colors">
+    <div class="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+      <span class="material-symbols-outlined text-primary text-[20px]">group</span>
+    </div>
+    <div class="min-w-0">
+      <div class="text-2xl font-bold" id="stat-users">{{.UserCount}}</div>
+      <div class="text-xs text-muted-foreground font-medium">Total User</div>
+    </div>
+  </a>
+  {{with .Resource}}
+  <div class="card p-5 flex items-center gap-4">
+    <div class="w-10 h-10 rounded-lg bg-success/15 flex items-center justify-center shrink-0">
+      <span class="material-symbols-outlined text-success text-[20px]">speed</span>
+    </div>
+    <div class="min-w-0">
+      <div class="text-2xl font-bold" id="stat-cpu">{{.CPULoad}}<span class="text-sm font-normal text-muted-foreground">%</span></div>
+      <div class="text-xs text-muted-foreground font-medium">CPU Load</div>
+    </div>
+  </div>
+  <div class="card p-5 flex items-center gap-4">
+    <div class="w-10 h-10 rounded-lg bg-warning/15 flex items-center justify-center shrink-0">
+      <span class="material-symbols-outlined text-warning text-[20px]">timer</span>
+    </div>
+    <div class="min-w-0">
+      <div class="text-lg font-bold leading-tight truncate" id="stat-uptime">{{.Uptime}}</div>
+      <div class="text-xs text-muted-foreground font-medium">Uptime Router</div>
+    </div>
+  </div>
+  {{end}}
+</div>
+
+<!-- Router Health -->
+<div id="router-health-card" class="card p-4 mb-6 flex items-center justify-between gap-4">
+  <div class="flex items-center gap-3 min-w-0">
+    <div id="health-icon-wrap" class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0
+      {{if eq .Health.Tone "emerald"}}bg-success/15{{else if eq .Health.Tone "red"}}bg-destructive/15{{else}}bg-warning/15{{end}}">
+      <span id="health-icon" class="material-symbols-outlined text-[20px]
+        {{if eq .Health.Tone "emerald"}}text-success{{else if eq .Health.Tone "red"}}text-destructive{{else}}text-warning{{end}}">{{.Health.Icon}}</span>
+    </div>
+    <div class="min-w-0">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Health Router</span>
+        <span id="health-label" class="badge badge-outline
+          {{if eq .Health.Tone "emerald"}}text-success{{else if eq .Health.Tone "red"}}text-destructive{{else}}text-warning{{end}}">{{.Health.Label}}</span>
+      </div>
+      <p id="health-detail" class="text-sm text-muted-foreground truncate mt-1">{{.Health.Detail}}</p>
+    </div>
+  </div>
+  <div class="hidden md:flex items-center gap-3 text-xs text-muted-foreground">
+    <span>CPU <b id="health-cpu" class="text-foreground">{{with .Resource}}{{.CPULoad}}{{end}}%</b></span>
+    <span>Memory <b id="health-mem" class="text-foreground">{{.MemUsedPct}}%</b></span>
+  </div>
+</div>
+
+<!-- 2-col layout -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Traffic Chart -->
+  <div class="card">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-[18px]">monitoring</span>
+        <h3 class="text-sm font-semibold">Traffic Monitor</h3>
+        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-success bg-success/10 border border-success/20 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+          <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>Live
+        </span>
+      </div>
+      <select id="iface-select" class="input h-8 text-xs w-auto">
+        {{range .Servers}}
+        <option value="{{index . "interface"}}">{{index . "interface"}} ({{index . "name"}})</option>
+        {{else}}
+        <option value="ether1">ether1</option>
+        {{end}}
+      </select>
+    </div>
+    <div class="p-4">
+      <canvas id="traffic-chart" height="180"></canvas>
+      <div class="flex items-center justify-center gap-6 mt-3">
+        <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span class="w-3 h-0.5 rounded-full bg-primary inline-block"></span>Download (Rx)
+        </div>
+        <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span class="w-3 h-0.5 rounded-full bg-success inline-block"></span>Upload (Tx)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Router Info -->
+  <div class="card">
+    <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+      <span class="material-symbols-outlined text-primary text-[18px]">router</span>
+      <h3 class="text-sm font-semibold">Info Router</h3>
+    </div>
+    <div class="card-content">
+      {{with .Resource}}
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-muted-foreground">Board</span>
+          <span class="text-sm font-medium">{{.BoardName}}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-muted-foreground">RouterOS Version</span>
+          <span class="badge badge-secondary">{{.Version}}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-muted-foreground">Uptime</span>
+          <span class="text-sm font-medium font-mono">{{.Uptime}}</span>
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-sm text-muted-foreground">CPU Load</span>
+            <span class="text-sm font-medium" id="info-cpu">{{.CPULoad}}%</span>
+          </div>
+          <div class="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+            <div class="bg-primary h-1.5 rounded-full transition-all duration-500" id="cpu-bar" style="width:{{.CPULoad}}%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-sm text-muted-foreground">Memory</span>
+            <span class="text-sm font-medium" id="info-mem">{{formatBytes (parseI64 .FreeMemory)}} free</span>
+          </div>
+          <div class="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+            <div class="bg-primary h-1.5 rounded-full transition-all duration-500" id="mem-bar" style="width:{{$.Data.MemUsedPct}}%"></div>
+          </div>
+        </div>
+      </div>
+      {{end}}
+    </div>
+  </div>
+</div>
+
+<!-- Hotspot Servers -->
+{{if .Servers}}
+<div class="card mt-6">
+  <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+    <span class="material-symbols-outlined text-primary text-[18px]">lan</span>
+    <h3 class="text-sm font-semibold">Hotspot Servers</h3>
+  </div>
+  <div class="overflow-x-auto scrollbar-thin">
+    <table class="table">
+      <thead><tr>
+        <th>Name</th>
+        <th>Interface</th>
+        <th>Address Pool</th>
+      </tr></thead>
+      <tbody>
+        {{range .Servers}}
+        <tr>
+          <td class="font-medium">{{index . "name"}}</td>
+          <td>{{index . "interface"}}</td>
+          <td class="text-muted-foreground">{{index . "address-pool"}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{end}}
+{{end}}
+{{end}}
+
+{{define "scripts"}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/static/js/traffic.js"></script>
+<script>
+(function dashboardPoller() {
+  const INTERVAL_MS = 10000;
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+  function setHTML(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = value;
+  }
+  function setWidth(id, pct) {
+    const el = document.getElementById(id);
+    if (el) el.style.width = pct + '%';
+  }
+  function setHealthTone(tone) {
+    const label = document.getElementById('health-label');
+    const icon = document.getElementById('health-icon');
+    const wrap = document.getElementById('health-icon-wrap');
+    if (!label || !icon || !wrap) return;
+    const toneClass = tone === 'red' ? 'destructive' : tone === 'emerald' ? 'success' : 'warning';
+    label.className = 'badge badge-outline text-' + toneClass;
+    icon.className = 'material-symbols-outlined text-[20px] text-' + toneClass;
+    wrap.className = 'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-' + toneClass + '/15';
+  }
+
+  async function poll() {
+    try {
+      const resp = await fetch('/api/dashboard');
+      if (!resp.ok) return;
+      const d = await resp.json();
+      if (!d.connected) return;
+
+      setText('stat-active', d.active);
+      setText('stat-users', d.users);
+
+      if (d.cpu !== undefined) {
+        setHTML('stat-cpu', d.cpu + '<span class="text-sm font-normal text-muted-foreground">%</span>');
+        setText('info-cpu', d.cpu + '%');
+        setWidth('cpu-bar', d.cpu);
+      }
+      if (d.uptime) setText('stat-uptime', d.uptime);
+      if (d.free_mem) {
+        setText('info-mem', d.free_mem + ' free');
+        setWidth('mem-bar', d.mem_pct);
+        setText('health-mem', d.mem_pct + '%');
+      }
+      if (d.cpu !== undefined) setText('health-cpu', d.cpu + '%');
+      if (d.health_label) setText('health-label', d.health_label);
+      if (d.health_detail) setText('health-detail', d.health_detail);
+      if (d.health_icon) setText('health-icon', d.health_icon);
+      if (d.health_tone) setHealthTone(d.health_tone);
+    } catch(e) {}
+  }
+
+  setInterval(poll, INTERVAL_MS);
+})();
+</script>
+{{end}}

@@ -1,0 +1,17 @@
+{
+  "name": "mikvoc-web",
+  "private": true,
+  "version": "2.0.0",
+  "description": "MikVoc frontend assets (Tailwind build)",
+  "scripts": {
+    "build": "tailwindcss -i ./src/input.css -o ./static/css/app.css --minify",
+    "dev": "tailwindcss -i ./src/input.css -o ./static/css/app.css --watch",
+    "fonts": "node scripts/fetch-fonts.mjs"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17",
+    "@tailwindcss/forms": "^0.5.10",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49"
+  }
+}

@@ -1,0 +1,50 @@
+{{define "topbar"}}
+<header class="sticky top-0 z-30 h-16 px-4 md:px-6 flex items-center justify-between
+  bg-background/80 backdrop-blur-md border-b border-border">
+  <div class="flex items-center gap-2">
+    <button class="md:hidden btn btn-ghost btn-icon" onclick="document.getElementById('sidebar').classList.remove('-translate-x-full'); document.getElementById('sidebar-backdrop').classList.remove('hidden')">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+    <a href="/dashboard" class="text-base font-bold tracking-tight hover:text-primary transition-colors">
+      {{if .RouterName}}{{.RouterName}}{{else}}MikVoc{{end}}
+    </a>
+  </div>
+
+  <div class="flex items-center gap-1">
+    {{if .Connected}}
+    <span class="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-success bg-success/10 border border-success/20 px-2.5 py-1 rounded-full">
+      <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+      Online
+    </span>
+    {{else}}
+    <span class="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-destructive bg-destructive/10 border border-destructive/20 px-2.5 py-1 rounded-full">
+      <span class="w-1.5 h-1.5 rounded-full bg-destructive"></span>
+      Offline
+    </span>
+    {{end}}
+
+    <select id="auto-refresh" class="bg-transparent border-0 text-xs text-muted-foreground cursor-pointer hover:text-foreground focus:ring-0" title="Auto Refresh">
+      <option value="0">Auto: Off</option>
+      <option value="15">15s</option>
+      <option value="30">30s</option>
+      <option value="60">1m</option>
+    </select>
+
+    <button onclick="window.location.reload()" class="btn btn-ghost btn-icon" title="Refresh">
+      <span class="material-symbols-outlined text-[18px]">refresh</span>
+    </button>
+
+    <button id="theme-toggle" class="btn btn-ghost btn-icon" title="Ganti tema">
+      <span class="material-symbols-outlined dark:hidden">dark_mode</span>
+      <span class="material-symbols-outlined hidden dark:block">light_mode</span>
+    </button>
+
+    <a href="/settings" class="btn btn-ghost btn-icon" title="Pengaturan">
+      <span class="material-symbols-outlined">settings</span>
+    </a>
+    <a href="/logout" class="btn btn-ghost btn-icon hover:text-destructive" title="Logout">
+      <span class="material-symbols-outlined">logout</span>
+    </a>
+  </div>
+</header>
+{{end}}

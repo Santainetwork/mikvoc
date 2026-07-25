@@ -1,0 +1,664 @@
+{{template "layout" .}}
+{{define "content"}}
+
+<div class="card mb-5 overflow-hidden">
+  <div class="px-4 py-3 border-b border-border flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-3 min-w-0">
+      <span class="material-symbols-outlined text-primary text-[22px]">group</span>
+      <div class="min-w-0">
+        <h1 class="text-lg font-semibold leading-tight">Hotspot Users</h1>
+        <div class="flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-muted-foreground mt-0.5">
+          <a href="/hotspot/generate" class="inline-flex items-center gap-1 hover:text-primary">
+            <span class="material-symbols-outlined text-[14px]">group_add</span>Generate
+          </a>
+          <span class="text-border">|</span>
+          <a href="{{.Data.ExportScriptURL}}" class="inline-flex items-center gap-1 hover:text-primary">
+            <span class="material-symbols-outlined text-[14px]">download</span>Script
+          </a>
+          <span class="text-border">|</span>
+          <a href="{{.Data.ExportCSVURL}}" class="inline-flex items-center gap-1 hover:text-primary">
+            <span class="material-symbols-outlined text-[14px]">download</span>CSV
+          </a>
+          <span class="text-border">|</span>
+          <button type="button" onclick="document.getElementById('import-csv-input').click()" class="inline-flex items-center gap-1 hover:text-primary">
+            <span class="material-symbols-outlined text-[14px]">upload</span>Import CSV
+          </button>
+          <input type="file" id="import-csv-input" accept=".csv,text/csv" class="hidden" onchange="ajaxImportCSV(this)"/>
+        </div>
+      </div>
+    </div>
+    <div id="table-count" class="badge badge-secondary">0 user</div>
+  </div>
+
+  {{with .Data}}
+  <div class="p-4">
+    <div class="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
+      <form method="GET" action="/hotspot/users" class="grid grid-cols-1 md:grid-cols-[minmax(150px,1fr)_minmax(190px,1.25fr)_minmax(180px,1.4fr)_auto] gap-2">
+        <input type="hidden" name="exp" value="{{if .Expired}}1{{end}}">
+        <select name="profile" onchange="this.form.submit()" class="input">
+          <option value="">Show All Profile</option>
+          {{range .Profiles}}
+          <option value="{{.Name}}" {{if eq $.Data.Profile .Name}}selected{{end}}>{{.Name}}</option>
+          {{end}}
+        </select>
+
+        <select name="comment" id="comment-filter" onchange="clearExpiredAndSubmit(this.form)" class="input">
+          <option value="">Comment / Batch</option>
+          {{range .Comments}}
+          <option value="{{.Value}}" data-profile="{{.Profile}}" {{if eq $.Data.Comment .Value}}selected{{end}}>{{.Value}}{{if .Profile}} {{.Profile}}{{end}} [{{.Count}}]</option>
+          {{end}}
+        </select>
+
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-[16px] pointer-events-none">search</span>
+          <input type="text" name="q" value="{{.Search}}" placeholder="Search" class="input pl-8"/>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="submit" class="btn btn-primary btn-md">
+            <span class="material-symbols-outlined text-[16px]">search</span>Cari
+          </button>
+          {{if or .Profile .Comment .Search .Expired}}
+          <a href="/hotspot/users" class="btn btn-ghost btn-md">
+            <span class="material-symbols-outlined text-[15px]">close</span>Reset
+          </a>
+          {{end}}
+        </div>
+      </form>
+
+      <div class="flex items-center flex-wrap gap-2 justify-start 2xl:justify-end">
+        {{if .Comment}}
+        <form method="POST" action="/hotspot/users/remove-comment" id="form-remove-comment" class="inline">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+          <input type="hidden" name="comment" value="{{.Comment}}">
+          <input type="hidden" name="profile" value="{{.Profile}}">
+          <button type="button" data-comment="{{.Comment}}" data-profile="{{.Profile}}" onclick="ajaxRemoveByComment(this)"
+            class="btn btn-destructive btn-md" title="Remove user by comment {{.Comment}}">
+            <span class="material-symbols-outlined text-[16px]">delete</span>By Comment
+          </button>
+        </form>
+        {{else if .Expired}}
+        <form method="POST" action="/hotspot/users/remove-expired" class="inline">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+          <button type="button" onclick="ajaxRemoveExpiredUsers()"
+            class="btn btn-destructive btn-md" title="Remove user expired">
+            <span class="material-symbols-outlined text-[16px]">delete_sweep</span>Expired Users
+          </button>
+        </form>
+        {{else if gt .ExpiredCount 0}}
+        <a href="/hotspot/users?exp=1"
+          class="btn btn-outline btn-md text-destructive hover:bg-destructive/10" title="Filter expired users">
+          <span class="material-symbols-outlined text-[16px]">search</span>Expired [{{.ExpiredCount}}]
+        </a>
+        {{end}}
+
+        <div class="inline-flex items-center gap-1.5 flex-wrap">
+          <span class="text-[11px] text-muted-foreground uppercase tracking-wide hidden sm:inline">Cetak</span>
+          <button type="button" onclick="printSelectedOrBatch('{{.PrintDefaultURL}}')"
+            class="btn btn-primary btn-md" title="Print default (Mikhmon classic)">
+            <span class="material-symbols-outlined text-[16px]">print</span>Print
+          </button>
+          <button type="button" onclick="printSelectedOrBatch('{{.PrintThermalURL}}')"
+            class="btn btn-outline btn-md" title="Print + QR">
+            <span class="material-symbols-outlined text-[16px]">qr_code_2</span>QR
+          </button>
+          <button type="button" onclick="printSelectedOrBatch('{{.PrintCompactURL}}')"
+            class="btn btn-outline btn-md" title="Print small">
+            <span class="material-symbols-outlined text-[16px]">receipt_long</span>Small
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {{end}}
+</div>
+
+<div id="users-table-container" class="card overflow-hidden">
+  <div id="loader" class="empty-state">
+    <span class="material-symbols-outlined animate-spin text-[32px] mb-2 text-muted-foreground">refresh</span>
+    <p class="text-sm text-muted-foreground">Memuat data user...</p>
+  </div>
+  <div class="overflow-x-auto scrollbar-thin" id="table-wrap" style="display:none;max-height:75vh">
+    <table id="users-table" class="table">
+      <thead class="bg-muted/50">
+        <tr>
+        <th class="text-center w-12">
+          <input id="select-all-users" type="checkbox" class="rounded" title="Pilih semua user">
+        </th>
+          <th>Server</th>
+          <th>Name</th>
+          <th class="text-center">Print</th>
+          <th>Profile</th>
+          <th>Mac Address</th>
+          <th class="text-right">Uptime</th>
+          <th class="text-right">Bytes In</th>
+          <th class="text-right">Bytes Out</th>
+        <th>Comment</th>
+        <th class="text-center">Action</th>
+        </tr>
+      </thead>
+      <tbody id="users-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Edit User -->
+<div id="edit-user-modal" class="modal-backdrop hidden" onclick="if(event.target===this) closeEditUserModal()">
+  <div class="modal max-w-lg">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-[22px]">edit</span>
+        <h3 class="text-lg font-bold">Edit User</h3>
+      </div>
+      <button type="button" onclick="closeEditUserModal()" class="btn btn-ghost btn-icon">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+    <form id="edit-user-form" data-loading>
+      <input type="hidden" name="id" id="edit-id" value=""/>
+      <div class="space-y-3">
+        <div>
+          <label class="label">Username</label>
+          <input type="text" id="edit-name" disabled class="input bg-muted cursor-not-allowed"/>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="label">Password</label>
+            <input type="text" name="password" id="edit-password" class="input"/>
+          </div>
+          <div>
+            <label class="label">Profile</label>
+            <select name="profile" id="edit-profile" class="input"></select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="label">Limit Uptime</label>
+            <input type="text" name="limit_uptime" id="edit-limit-uptime" placeholder="1d, 12h..." class="input"/>
+          </div>
+          <div>
+            <label class="label">Limit Bytes Total</label>
+            <input type="text" name="limit_bytes" id="edit-limit-bytes" placeholder="0" class="input"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="label">Server</label>
+            <input type="text" name="server" id="edit-server" placeholder="all" class="input"/>
+          </div>
+          <div>
+            <label class="label">MAC Address</label>
+            <input type="text" name="mac_address" id="edit-mac" placeholder="auto" class="input"/>
+          </div>
+        </div>
+        <div>
+          <label class="label">Comment</label>
+          <input type="text" name="comment" id="edit-comment" class="input"/>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 mt-6">
+        <button type="button" onclick="closeEditUserModal()" class="btn btn-ghost btn-md">Batal</button>
+        <button type="submit" class="btn btn-primary btn-md">
+          <span class="material-symbols-outlined text-[18px]">save</span>
+          Simpan
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
+<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" type="text/javascript"></script>
+<style>
+.dataTable-wrapper { border: none; }
+.dataTable-top, .dataTable-bottom { padding: 0.625rem 0.75rem; }
+.dataTable-selector, .dataTable-input {
+  padding: 0.3rem 0.625rem; border-radius: var(--radius); font-size: 0.8125rem;
+  border: 1px solid hsl(var(--input)); background: hsl(var(--background)); color: hsl(var(--foreground));
+}
+.dataTable-info { color: hsl(var(--muted-foreground)); font-size: 0.75rem; }
+.dataTable-pagination li a {
+  border-radius: var(--radius); padding: 0.25rem 0.5rem; font-size: 0.8125rem;
+  color: hsl(var(--primary)); border: 1px solid transparent; transition: all 150ms;
+}
+.dataTable-pagination li a:hover { background: hsl(var(--accent)); }
+.dataTable-pagination li.active a { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+.dataTable-table { border-collapse: collapse; width: 100%; }
+.dataTable-container { overflow-x: auto; }
+.dataTable-table > thead > tr > th { background: transparent; white-space: nowrap; }
+.dataTable-table > thead > tr > th > a { color: inherit !important; }
+.dataTable-table > tbody > tr > td {
+  padding: 0.38rem 0.75rem; vertical-align: middle;
+  border-bottom: 1px solid hsl(var(--border)); font-size: 0.8125rem; white-space: nowrap;
+}
+.dataTable-table > tbody > tr:hover { background: hsl(var(--muted) / 0.5); }
+.bulk-user-actions { display:flex; align-items:center; gap:0.5rem; margin-left:0.75rem; }
+.bulk-user-actions[hidden] { display:none; }
+</style>
+<script>
+function fmtB(b) {
+  if (!b || b === '0') return '';
+  var n = parseInt(b, 10);
+  if (isNaN(n)) return b;
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n/1024).toFixed(1) + ' KB';
+  if (n < 1073741824) return (n/1048576).toFixed(2) + ' MB';
+  return (n/1073741824).toFixed(2) + ' GB';
+}
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function attr(s) { return esc(s); }
+function jsArg(s) {
+  return "'" + String(s || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\x22').replace(/</g,'\\x3C').replace(/>/g,'\\x3E').replace(/&/g,'\\x26').replace(/\r/g,'\\r').replace(/\n/g,'\\n') + "'";
+}
+function clearExpiredAndSubmit(form) {
+  const exp = form.querySelector('input[name="exp"]');
+  if (exp) exp.value = '';
+  form.submit();
+}
+function usersFilterURL(extra, clearKeys) {
+  const params = new URLSearchParams(window.location.search);
+  (clearKeys || []).forEach(key => params.delete(key));
+  Object.keys(extra || {}).forEach(key => {
+    const value = extra[key];
+    if (value) params.set(key, value);
+    else params.delete(key);
+  });
+  const query = params.toString();
+  return '/hotspot/users' + (query ? '?' + query : '');
+}
+function hasCommentFilter() {
+  const selected = document.getElementById('comment-filter');
+  const params = new URLSearchParams(window.location.search);
+  return (selected && selected.value) || params.get('comment');
+}
+function selectedCommentProfile() {
+  const selected = document.getElementById('comment-filter');
+  if (!selected || !selected.selectedOptions || !selected.selectedOptions.length) return '';
+  return selected.selectedOptions[0]?.dataset?.profile || '';
+}
+function selectedUserIDs() {
+  return Array.from(document.querySelectorAll('.user-select:checked')).map(cb => cb.value).filter(Boolean);
+}
+function selectedPrintURL(baseURL) {
+  const ids = selectedUserIDs();
+  if (ids.length === 0) return baseURL;
+  const url = new URL(baseURL, window.location.origin);
+  url.searchParams.delete('ids');
+  ids.forEach(id => url.searchParams.append('ids', id));
+  return url.pathname + '?' + url.searchParams.toString();
+}
+function printSelectedOrBatch(url) {
+  if (selectedUserIDs().length === 0 && !hasCommentFilter()) {
+    window.showToast('Pilih user (checkbox) atau pilih Comment batch dulu, seperti di Mikhmon.', 'warning', 'warning');
+    return;
+  }
+  window.open(selectedPrintURL(url), '_blank', 'noopener');
+}
+function updateBulkActions() {
+  const ids = selectedUserIDs();
+  const box = document.getElementById('bulk-user-actions');
+  const count = document.getElementById('selected-user-count');
+  const selectAll = document.getElementById('select-all-users');
+  const visibleBoxes = Array.from(document.querySelectorAll('.user-select'));
+  if (box) box.hidden = ids.length === 0;
+  if (count) count.textContent = ids.length + ' selected';
+  if (selectAll) {
+    selectAll.checked = visibleBoxes.length > 0 && visibleBoxes.every(cb => cb.checked);
+    selectAll.indeterminate = ids.length > 0 && !selectAll.checked;
+  }
+}
+function refreshUsersTable() {
+  if (typeof window.__loadUsersTable === 'function') window.__loadUsersTable();
+}
+function postUserAction(action, params, busyMsg) {
+  const run = () => fetch(action, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'fetch', 'Accept': 'application/json'},
+    body: params,
+  }).then(async res => {
+    const type = res.headers.get('Content-Type') || '';
+    const payload = type.includes('application/json') ? await res.json().catch(() => null) : null;
+    if (!res.ok) throw new Error((payload && payload.message) || ('HTTP ' + res.status));
+    return payload || res;
+  });
+  if (window.mikvocBusy && busyMsg !== false) {
+    return window.mikvocBusy.with(busyMsg || 'Memproses... Jangan refresh.', run);
+  }
+  return run();
+}
+function afterUserAction(payload) {
+  if (payload && payload.message) {
+    const tone = payload.warning ? 'warning' : 'success';
+    const icon = payload.warning ? 'warning' : 'check_circle';
+    window.showToast(payload.message, tone, icon);
+  }
+  refreshUsersTable();
+}
+function ajaxSubmitAction(action, id, disabled, label) {
+  if (label && !confirm(label)) return;
+  const params = new URLSearchParams();
+  params.append('id', id);
+  if (typeof disabled !== 'undefined') params.append('disabled', disabled);
+  const isRemove = action.indexOf('/remove') !== -1;
+  postUserAction(action, params, isRemove ? 'Menghapus user... Jangan refresh.' : 'Memproses... Jangan refresh.')
+    .then(afterUserAction)
+    .catch(err => window.showToast('Aksi gagal: ' + err.message, 'destructive', 'error'));
+}
+function ajaxRemoveSelectedUsers() {
+  const ids = selectedUserIDs();
+  if (ids.length === 0) return;
+  if (!confirm('Hapus ' + ids.length + ' user terpilih?')) return;
+  const params = new URLSearchParams();
+  ids.forEach(id => params.append('id', id));
+  postUserAction('/hotspot/users/remove', params, 'Menghapus ' + ids.length + ' user... Jangan refresh.')
+    .then(afterUserAction)
+    .catch(err => window.showToast('Gagal hapus user: ' + err.message, 'destructive', 'error'));
+}
+function ajaxBulkDisable(disabled) {
+  const ids = selectedUserIDs();
+  if (ids.length === 0) return;
+  const action = disabled ? 'Disable' : 'Enable';
+  if (!confirm(action + ' ' + ids.length + ' user terpilih?')) return;
+  const params = new URLSearchParams();
+  ids.forEach(id => params.append('id', id));
+  params.append('disabled', disabled ? 'true' : 'false');
+  postUserAction('/hotspot/users/bulk-disable', params, action + ' ' + ids.length + ' user... Jangan refresh.')
+    .then(afterUserAction)
+    .catch(err => window.showToast('Gagal ' + action.toLowerCase() + ': ' + err.message, 'destructive', 'error'));
+}
+function ajaxBulkProfile() {
+  const ids = selectedUserIDs();
+  if (ids.length === 0) return;
+  const sel = document.getElementById('bulk-profile-select');
+  const profile = sel ? sel.value : '';
+  if (!profile) {
+    window.showToast('Pilih profile tujuan dulu', 'warning', 'warning');
+    return;
+  }
+  if (!confirm('Pindah ' + ids.length + ' user ke profile ' + profile + '?')) return;
+  const params = new URLSearchParams();
+  ids.forEach(id => params.append('id', id));
+  params.append('profile', profile);
+  postUserAction('/hotspot/users/bulk-profile', params, 'Memindah profile... Jangan refresh.')
+    .then(afterUserAction)
+    .catch(err => window.showToast('Gagal pindah profile: ' + err.message, 'destructive', 'error'));
+}
+function ajaxImportCSV(input) {
+  if (!input.files || !input.files.length) return;
+  const file = input.files[0];
+  if (!confirm('Import ' + file.name + '? User akan dibuat di router aktif.')) {
+    input.value = '';
+    return;
+  }
+  const fd = new FormData();
+  fd.append('csv_file', file);
+  const run = () => fetch('/hotspot/users/import-csv', {
+    method: 'POST',
+    headers: {'X-Requested-With': 'fetch', 'Accept': 'application/json'},
+    body: fd,
+  })
+    .then(async res => {
+      const ct = res.headers.get('Content-Type') || '';
+      const payload = ct.includes('application/json') ? await res.json().catch(() => null) : null;
+      if (!res.ok || (payload && payload.ok === false)) {
+        throw new Error((payload && payload.message) || ('HTTP ' + res.status));
+      }
+      afterUserAction(payload);
+    });
+  const p = window.mikvocBusy
+    ? window.mikvocBusy.with('Import CSV... Jangan refresh.', run)
+    : run();
+  p.catch(err => window.showToast('Gagal import CSV: ' + err.message, 'destructive', 'error'))
+    .finally(() => { input.value = ''; });
+}
+function ajaxRemoveExpiredUsers() {
+  if (!confirm('Hapus semua user expired?')) return;
+  postUserAction('/hotspot/users/remove-expired', new URLSearchParams(), 'Menghapus user expired... Jangan refresh.')
+    .then(afterUserAction)
+    .catch(err => window.showToast('Gagal hapus expired: ' + err.message, 'destructive', 'error'));
+}
+function ajaxRemoveByComment(button) {
+  const comment = button?.dataset?.comment || '';
+  const profile = button?.dataset?.profile || selectedCommentProfile() || '';
+  if (!comment) return;
+  const scope = profile ? ' pada profile ' + profile : '';
+  if (!confirm('Hapus user belum terpakai dengan comment ' + comment + scope + '?')) return;
+  const params = new URLSearchParams();
+  params.append('comment', comment);
+  params.append('profile', profile);
+  postUserAction('/hotspot/users/remove-comment', params, 'Menghapus by comment... Jangan refresh.')
+    .then(afterUserAction)
+    .catch(err => window.showToast('Gagal hapus by comment: ' + err.message, 'destructive', 'error'));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  let usersTable = null;
+  const urlParams = new URLSearchParams(window.location.search);
+  const profile = urlParams.get('profile') || '';
+  const comment = urlParams.get('comment') || '';
+  const search = urlParams.get('q') || '';
+  const exp = urlParams.get('exp') || '';
+  const apiURL = '/api/hotspot/users?profile=' + encodeURIComponent(profile) + '&comment=' + encodeURIComponent(comment) + '&q=' + encodeURIComponent(search) + '&exp=' + encodeURIComponent(exp);
+
+  function loadUsersTable() {
+  fetch(apiURL)
+    .then(res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(payload => {
+      document.getElementById('loader')?.remove();
+      document.getElementById('table-wrap').style.display = '';
+      let data = [];
+      let total = 0;
+      if (Array.isArray(payload)) {
+        data = payload;
+        total = payload.length;
+      } else if (payload && Array.isArray(payload.users)) {
+        data = payload.users;
+        total = typeof payload.total === 'number' ? payload.total : data.length;
+      }
+      document.getElementById('table-count').textContent = total + ' user';
+      if (usersTable) {
+        usersTable.destroy();
+        usersTable = null;
+      }
+
+      let html = '';
+      data.forEach((u) => {
+        const disabled = !!u.Disabled;
+        const mode = u.Name === u.Password ? 'vc' : 'up';
+        const limitInfo = u.LimitUptime === '1s' ? ' expired' : (u.LimitUptime ? ' ' + u.LimitUptime : '');
+        const dataInfo = u.LimitBytesTotal ? ' ' + fmtB(u.LimitBytesTotal) : '';
+        const server = u.Server || 'all';
+        const comment = u.Comment || '';
+        const isGeneratedComment = comment.startsWith('vc-') || comment.startsWith('up-') || /^[^-]+-\d{2}\.\d{2}\.\d{2}/.test(comment);
+        let commentHtml = '';
+        if (isGeneratedComment) {
+          const href = usersFilterURL({comment: comment}, ['exp']);
+          commentHtml = `<a href="${attr(href)}" class="inline-flex items-center gap-1 text-primary hover:underline" title="Filter by ${attr(comment)}"><span class="material-symbols-outlined text-[13px]">search</span>${esc(comment)}${esc(dataInfo)}${esc(limitInfo)}</a>`;
+        } else if (u.LimitUptime === '1s') {
+          const href = usersFilterURL({exp: '1'}, ['comment']);
+          commentHtml = `<a href="${attr(href)}" class="inline-flex items-center gap-1 text-destructive hover:underline" title="Filter by expired"><span class="material-symbols-outlined text-[13px]">search</span>${esc(comment)}${esc(dataInfo)} expired</a>`;
+        } else {
+          commentHtml = esc(comment);
+        }
+
+        const idArg = jsArg(u.ID);
+        const nameArg = jsArg(u.Name);
+        const lockIcon = disabled
+          ? `<button type="button" onclick="ajaxSubmitAction('/hotspot/users/disable',${idArg},'false')" class="text-warning hover:text-warning/80" title="Enable User ${attr(u.Name)}"><span class="material-symbols-outlined text-[16px]">lock</span></button>`
+          : `<button type="button" onclick="ajaxSubmitAction('/hotspot/users/disable',${idArg},'true')" class="text-muted-foreground hover:text-foreground" title="Disable User ${attr(u.Name)}"><span class="material-symbols-outlined text-[16px]">lock_open</span></button>`;
+
+        html += `<tr class="${disabled ? 'opacity-60' : ''}">
+          <td class="text-center">
+            <input type="checkbox" class="user-select rounded" value="${attr(u.ID)}" data-preserve aria-label="Pilih ${attr(u.Name)}">
+          </td>
+          <td class="text-muted-foreground text-xs">${esc(server)}</td>
+          <td><button type="button" onclick="openEditUserModal(${idArg})" class="inline-flex items-center gap-1 font-medium text-primary font-mono text-xs hover:underline" title="Edit ${attr(u.Name)}"><span class="material-symbols-outlined text-[14px]">edit</span>${esc(u.Name)}</button></td>
+          <td class="text-center">
+            <div class="flex items-center justify-center gap-3">
+              <a href="/hotspot/users/quickprint?username=${encodeURIComponent(u.Name)}" target="_blank" class="text-muted-foreground hover:text-success" title="Print ${attr(u.Name)}"><span class="material-symbols-outlined text-[16px]">print</span></a>
+              <a href="/hotspot/users/quickprint?username=${encodeURIComponent(u.Name)}&qr=yes&mode=${mode}" target="_blank" class="text-muted-foreground hover:text-success" title="Print QR ${attr(u.Name)}"><span class="material-symbols-outlined text-[16px]">qr_code_2</span></a>
+            </div>
+          </td>
+          <td class="text-xs">${esc(u.Profile)}</td>
+          <td class="text-muted-foreground text-xs font-mono">${esc(u.MacAddress)}</td>
+          <td class="text-muted-foreground text-xs text-right">${esc(u.Uptime)}</td>
+          <td class="text-muted-foreground text-xs text-right">${fmtB(u.BytesIn)}</td>
+          <td class="text-muted-foreground text-xs text-right">${fmtB(u.BytesOut)}</td>
+          <td class="text-xs">${commentHtml}</td>
+          <td class="text-center">
+            <div class="flex items-center justify-center gap-3">
+              ${lockIcon}
+              <button type="button" onclick="ajaxSubmitAction('/hotspot/users/remove',${idArg},undefined,'Hapus user ' + ${nameArg} + '?')" class="text-destructive hover:text-destructive/80" title="Remove ${attr(u.Name)}"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+            </div>
+          </td>
+        </tr>`;
+      });
+
+      document.getElementById('users-tbody').innerHTML = html;
+      usersTable = new simpleDatatables.DataTable('#users-table', {
+        searchable: true,
+        fixedHeight: false,
+        perPage: 50,
+        perPageSelect: [10, 50, 100, 500, 1000],
+        labels: {
+          placeholder: 'Search table...',
+          perPage: '{select} entries per page',
+          noRows: 'Tidak ada data ditemukan',
+          info: 'Showing {start} to {end} of {rows} users',
+        },
+        columns: [
+          { select: 0, sortable: false },
+          { select: 3, sortable: false },
+          { select: 10, sortable: false }
+        ]
+      });
+      const wrapper = document.querySelector('.dataTable-top');
+      if (wrapper && !document.getElementById('bulk-user-actions')) {
+        const bulk = document.createElement('div');
+        bulk.id = 'bulk-user-actions';
+        bulk.className = 'bulk-user-actions';
+        bulk.hidden = true;
+        bulk.innerHTML = `<span id="selected-user-count" class="text-xs font-semibold text-muted-foreground">0 selected</span>
+          <select id="bulk-profile-select" class="input h-8 text-xs w-auto">
+            <option value="">Pindah Profile...</option>
+            ${MIKVOC_PROFILES.map(p => '<option value="'+esc(p)+'">'+esc(p)+'</option>').join('')}
+          </select>
+          <button type="button" onclick="ajaxBulkDisable(false)" class="btn btn-ghost btn-sm" title="Enable Selected"><span class="material-symbols-outlined text-[14px]">lock_open</span></button>
+          <button type="button" onclick="ajaxBulkDisable(true)" class="btn btn-ghost btn-sm" title="Disable Selected"><span class="material-symbols-outlined text-[14px]">lock</span></button>
+          <button type="button" onclick="ajaxBulkProfile()" class="btn btn-secondary btn-sm" title="Move to Profile"><span class="material-symbols-outlined text-[14px]">swap_horiz</span></button>
+          <button type="button" onclick="ajaxRemoveSelectedUsers()" class="btn btn-destructive btn-sm"><span class="material-symbols-outlined text-[14px]">delete</span>Delete</button>`;
+        wrapper.prepend(bulk);
+      }
+      document.getElementById('select-all-users')?.addEventListener('change', function() {
+        document.querySelectorAll('.user-select').forEach(cb => { cb.checked = this.checked; });
+        updateBulkActions();
+      });
+      document.getElementById('users-tbody')?.addEventListener('change', function(e) {
+        if (e.target && e.target.classList.contains('user-select')) updateBulkActions();
+      });
+      updateBulkActions();
+    })
+    .catch(err => {
+      console.error(err);
+      document.getElementById('loader').innerHTML = '<p class="text-destructive text-sm py-4">Gagal memuat data user. Silakan refresh halaman.</p>';
+    });
+  }
+  window.__loadUsersTable = loadUsersTable;
+  loadUsersTable();
+})();
+
+// --- Edit User Modal ---
+window.MIKVOC_PROFILES = [
+  {{range .Data.Profiles}}"{{.Name}}",{{end}}
+];
+
+function openEditUserModal(id) {
+  fetch('/api/hotspot/user?id=' + encodeURIComponent(id), {headers: {'Accept': 'application/json'}})
+    .then(res => res.json())
+    .then(u => {
+      if (!u.ok) {
+        window.showToast(u.message || 'Gagal memuat data user', 'destructive', 'error');
+        return;
+      }
+      const m = document.getElementById('edit-user-modal');
+      if (!m) return;
+      document.getElementById('edit-id').value = u.id || '';
+      document.getElementById('edit-name').value = u.name || '';
+      document.getElementById('edit-password').value = u.password || '';
+      document.getElementById('edit-limit-uptime').value = u.limit_uptime || '';
+      document.getElementById('edit-limit-bytes').value = u.limit_bytes || '';
+      document.getElementById('edit-server').value = u.server || '';
+      document.getElementById('edit-mac').value = u.mac_address || '';
+      document.getElementById('edit-comment').value = u.comment || '';
+      const sel = document.getElementById('edit-profile');
+      sel.innerHTML = '';
+      (window.MIKVOC_PROFILES || []).forEach(pname => {
+        const opt = document.createElement('option');
+        opt.value = pname;
+        opt.textContent = pname;
+        if (u.profile === pname) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      m.classList.remove('hidden');
+    })
+    .catch(err => window.showToast('Gagal memuat user: ' + err.message, 'destructive', 'error'));
+}
+function closeEditUserModal() {
+  const m = document.getElementById('edit-user-modal');
+  if (!m) return;
+  m.classList.add('hidden');
+}
+function submitEditUser(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = form.querySelector('button[type="submit"]');
+  const params = new URLSearchParams(new FormData(form));
+  if (btn) {
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Menyimpan...';
+    btn.dataset.orig = orig;
+  }
+  const run = () => fetch('/hotspot/users/edit', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'fetch', 'Accept': 'application/json'},
+    body: params.toString(),
+  })
+    .then(async res => {
+      const ct = res.headers.get('Content-Type') || '';
+      const payload = ct.includes('application/json') ? await res.json().catch(() => null) : null;
+      if (!res.ok || (payload && payload.ok === false)) {
+        throw new Error((payload && payload.message) || ('HTTP ' + res.status));
+      }
+      if (payload && payload.message) {
+        window.showToast(payload.message, 'success', 'check_circle');
+      }
+      closeEditUserModal();
+      refreshUsersTable();
+    });
+  const p = window.mikvocBusy
+    ? window.mikvocBusy.with('Menyimpan user... Jangan refresh.', run)
+    : run();
+  p.catch(err => {
+    window.showToast('Gagal update user: ' + err.message, 'destructive', 'error');
+  }).finally(() => {
+    if (btn) {
+      btn.disabled = false;
+      if (btn.dataset.orig) btn.innerHTML = btn.dataset.orig;
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const f = document.getElementById('edit-user-form');
+  if (f) f.addEventListener('submit', submitEditUser);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeEditUserModal();
+  });
+});
+</script>
+{{end}}

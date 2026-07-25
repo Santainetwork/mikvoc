@@ -1,0 +1,278 @@
+{{template "layout" .}}
+{{define "content"}}
+
+<div class="mb-6 flex items-center justify-between flex-wrap gap-3 print:hidden">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Voucher Generator</h1>
+    <p class="text-muted-foreground text-sm mt-0.5">Buat user hotspot dalam jumlah besar</p>
+  </div>
+  <a href="/hotspot/users" class="btn btn-outline btn-md">
+    <span class="material-symbols-outlined text-[16px]">group</span>
+    Lihat User List
+  </a>
+</div>
+
+{{with .Data}}
+<div class="grid grid-cols-1 xl:grid-cols-5 gap-6 print:hidden">
+
+  <!-- Generator Form (3/5) -->
+  <div class="xl:col-span-3 card">
+    <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+      <span class="material-symbols-outlined text-primary text-[18px]">confirmation_number</span>
+      <h3 class="text-sm font-semibold">Parameter Generate</h3>
+    </div>
+    <div class="card-content">
+      <form method="POST" action="/hotspot/generate" id="gen-form" data-loading data-loading-text="Sedang generate voucher... Jangan refresh.">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <div class="grid grid-cols-2 gap-4">
+
+          <div class="space-y-1.5">
+            <label class="label">Jumlah (Qty)</label>
+            <input type="number" name="qty" min="1" max="500" value="{{if .LastOpts.Qty}}{{.LastOpts.Qty}}{{else}}1{{end}}" class="input" required/>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="label">Server</label>
+            <select name="server" class="input">
+              <option value="all">all</option>
+              {{range .Servers}}<option value="{{index . "name"}}">{{index . "name"}}</option>{{end}}
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="label">Mode</label>
+            {{if eq .LoginMode "voucher"}}
+              <input type="hidden" name="mode" value="vc">
+              <div class="input bg-muted text-muted-foreground">Voucher Only (Terkunci)</div>
+            {{else if eq .LoginMode "member"}}
+              <input type="hidden" name="mode" value="up">
+              <div class="input bg-muted text-muted-foreground">Member Only (Terkunci)</div>
+            {{else}}
+              <select name="mode" class="input">
+                <option value="vc" {{if or (eq .LastOpts.Mode "vc") (eq .LastOpts.Mode "")}}selected{{end}}>Username = Password (Voucher)</option>
+                <option value="up" {{if eq .LastOpts.Mode "up"}}selected{{end}}>User + Password Terpisah</option>
+              </select>
+            {{end}}
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="label">Profil User</label>
+            {{$lastProfile := .LastOpts.Profile}}
+            <select name="profile" id="profile-select" class="input" required>
+              {{if not .Profiles}}
+              <option value="" disabled selected>— Belum ada profil —</option>
+              {{end}}
+              {{range .Profiles}}
+              {{if not .IsDefault}}
+              <option value="{{.Name}}" data-validity="{{.Validity}}" {{if eq .Name $lastProfile}}selected{{end}}>
+                {{.Name}}{{if .RateLimit}} · {{.RateLimit}}{{end}}{{if .Validity}} · {{.Validity}}{{end}}
+              </option>
+              {{end}}
+              {{end}}
+              {{range .Profiles}}
+              {{if .IsDefault}}
+              <option value="{{.Name}}" data-validity="{{.Validity}}" {{if eq .Name $lastProfile}}selected{{end}}>
+                [default] {{.Name}}{{if .Validity}} · {{.Validity}}{{end}}
+              </option>
+              {{end}}
+              {{end}}
+            </select>
+            <p id="profile-validity-hint" class="text-[11px] text-muted-foreground"></p>
+            {{if not .Profiles}}
+            <p class="text-[11px] text-warning">⚠ Belum ada profil. <a href="/hotspot/profiles" class="underline hover:text-warning/80">Buat profil dulu</a> sebelum generate.</p>
+            {{end}}
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="label">Prefix <span class="text-muted-foreground normal-case font-normal">(opsional)</span></label>
+            <input type="text" name="prefix" maxlength="6" placeholder="cth: RT1-" class="input"/>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="label">Panjang Karakter</label>
+            <select name="length" class="input">
+              <option value="4">4 karakter</option>
+              <option value="5">5 karakter</option>
+              <option value="6" selected>6 karakter</option>
+              <option value="7">7 karakter</option>
+              <option value="8">8 karakter</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="label">Tipe Karakter</label>
+            <select name="charmode" class="input">
+              <option value="lower">Huruf kecil (abcd)</option>
+              <option value="upper">Huruf besar (ABCD)</option>
+              <option value="upplow">Campuran (aBcD)</option>
+              <option value="mix">Huruf + Angka (ab23)</option>
+              <option value="num">Angka saja (2345)</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="label">Limit Waktu <span class="text-muted-foreground normal-case font-normal">(opsional)</span></label>
+            <input type="text" name="time_limit" placeholder="cth: 1d, 24h, 30m" pattern="^(\d+[wdhms])+$" title="Gunakan format Mikrotik, contoh: 1d, 12h, 30m, atau 1d12h" class="input"/>
+          </div>
+
+          <div class="col-span-2 space-y-1.5">
+            <label class="label">Limit Data <span class="text-muted-foreground normal-case font-normal">(opsional)</span></label>
+            <div class="flex gap-2">
+              <input type="number" name="data_limit" min="0" placeholder="0 = tak terbatas" class="input flex-1"/>
+              <select name="data_unit" class="input w-auto">
+                <option value="1048576">MB</option>
+                <option value="1073741824">GB</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-span-2 space-y-1.5">
+            <label class="label">Label batch <span class="text-muted-foreground normal-case font-normal">(opsional, ditambah ke comment)</span></label>
+            <input type="text" name="comment" placeholder="cth: pagi / meja-1" class="input" value="{{.LastOpts.Comment}}"/>
+          </div>
+
+        </div>
+
+        <div class="mt-6 flex gap-3 flex-wrap">
+          <button type="submit" name="auto_print" value="1" id="gen-btn" class="btn btn-primary btn-md">
+            <span class="material-symbols-outlined text-[18px]">print</span>
+            Generate &amp; Print
+          </button>
+          <button type="submit" name="auto_print" value="0" class="btn btn-outline btn-md">
+            <span class="material-symbols-outlined text-[16px]">add</span>
+            Generate saja
+          </button>
+          <button type="reset" class="btn btn-outline btn-md" id="gen-reset">
+            <span class="material-symbols-outlined text-[16px]">refresh</span>
+            Reset
+          </button>
+        </div>
+        <p id="gen-wait-hint" class="hidden mt-3 text-xs text-muted-foreground flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
+          Generate berjalan di server. Tunggu hasil — jangan refresh / tekan tombol lagi.
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Result Panel (2/5) -->
+  <div class="xl:col-span-2 flex flex-col gap-4">
+    <!-- Tips card -->
+    <div class="card bg-primary/5 border-primary/20 p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="material-symbols-outlined text-primary text-[16px]">info</span>
+        <span class="text-xs font-semibold text-primary uppercase tracking-wider">Info</span>
+      </div>
+      <ul class="text-xs text-muted-foreground space-y-1">
+        <li>• Comment batch: <code>vc-profil-tgl</code> (cetak ulang lewat filter comment)</li>
+        <li>• Karakter ambigu (0, 1, O, l, q, Q) dihilangkan</li>
+        <li>• Print memakai template Mikhmon (classic / thermal / small)</li>
+        <li>• Maksimum 500 voucher per generate</li>
+      </ul>
+    </div>
+
+    {{if .Generated}}
+    <!-- Generated Result -->
+    <div class="card border-success/20 flex-1">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-border flex-wrap gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="material-symbols-outlined text-success text-[16px]">check_circle</span>
+          <div class="min-w-0">
+            <span class="text-sm font-semibold">{{len .Generated}} Voucher</span>
+            {{if .BatchComment}}
+            <p class="text-[11px] text-muted-foreground truncate" title="{{.BatchComment}}">Comment: {{.BatchComment}}</p>
+            {{end}}
+          </div>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          {{if .PrintURL}}
+          <a href="{{.PrintURL}}" target="_blank" class="btn btn-primary btn-sm">
+            <span class="material-symbols-outlined text-[14px]">print</span>Print
+          </a>
+          <a href="{{.PrintQRURL}}" target="_blank" class="btn btn-outline btn-sm">
+            <span class="material-symbols-outlined text-[14px]">qr_code_2</span>QR
+          </a>
+          <a href="{{.PrintSmallURL}}" target="_blank" class="btn btn-outline btn-sm">
+            <span class="material-symbols-outlined text-[14px]">receipt_long</span>Small
+          </a>
+          {{end}}
+          <button type="button" onclick="copyAll()" class="btn btn-outline btn-sm">
+            <span class="material-symbols-outlined text-[14px]">content_copy</span>Copy
+          </button>
+        </div>
+      </div>
+      <div class="overflow-y-auto scrollbar-thin max-h-96 p-2" id="voucher-grid">
+        {{range .Generated}}
+        <div class="voucher-item flex items-center justify-between bg-muted/50 hover:bg-muted rounded-md px-4 py-2.5 mb-1.5 group cursor-pointer" onclick="copyVoucher(this)">
+          <div class="font-mono text-sm">
+            <span class="font-semibold">{{index . 0}}</span>
+            <span class="text-muted-foreground mx-2">/</span>
+            <span class="text-muted-foreground">{{index . 1}}</span>
+          </div>
+          <span class="material-symbols-outlined text-[14px] text-muted-foreground group-hover:text-primary opacity-0 group-hover:opacity-100">content_copy</span>
+        </div>
+        {{end}}
+      </div>
+    </div>
+    {{else}}
+    <div class="card flex-1 flex flex-col items-center justify-center py-12 text-center">
+      <span class="material-symbols-outlined text-muted-foreground text-[48px] mb-3">confirmation_number</span>
+      <p class="text-muted-foreground text-sm">Hasil generate akan muncul di sini</p>
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}
+
+{{end}}
+
+{{define "scripts"}}
+<script>
+function updateProfileValidityHint() {
+  const select = document.getElementById('profile-select');
+  const hint = document.getElementById('profile-validity-hint');
+  if (!select || !hint) return;
+  const validity = select.selectedOptions && select.selectedOptions.length ? select.selectedOptions[0].dataset.validity : '';
+  hint.textContent = validity ? 'Masa aktif profil: ' + validity + ' otomatis dipakai jika Limit Waktu dikosongkan.' : 'Isi Limit Waktu manual jika profil belum memiliki Masa aktif.';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const profileSelect = document.getElementById('profile-select');
+  if (profileSelect) {
+    profileSelect.addEventListener('change', updateProfileValidityHint);
+    updateProfileValidityHint();
+  }
+  const form = document.getElementById('gen-form');
+  if (form) {
+    form.addEventListener('submit', function () {
+      const hint = document.getElementById('gen-wait-hint');
+      if (hint) hint.classList.remove('hidden');
+    });
+  }
+});
+
+function copyAll() {
+  const items = document.querySelectorAll('.voucher-item');
+  let text = '';
+  items.forEach(el => {
+    const spans = el.querySelectorAll('.font-mono span');
+    if (spans.length >= 2) text += spans[0].textContent.trim() + ' / ' + spans[1].textContent.trim() + '\n';
+  });
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target.closest('button');
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<span class="material-symbols-outlined text-[14px]">check</span>Copied!';
+      setTimeout(() => btn.innerHTML = orig, 2000);
+    }
+  });
+}
+function copyVoucher(el) {
+  const spans = el.querySelectorAll('.font-mono span');
+  const text = spans[0]?.textContent.trim() + ' / ' + spans[1]?.textContent.trim();
+  navigator.clipboard.writeText(text);
+  el.classList.add('bg-primary/10', 'border', 'border-primary/30');
+  setTimeout(() => el.classList.remove('bg-primary/10', 'border', 'border-primary/30'), 1000);
+}
+</script>
+{{end}}

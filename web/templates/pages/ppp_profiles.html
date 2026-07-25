@@ -1,0 +1,150 @@
+{{template "layout" .}}
+{{define "content"}}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">PPP Profiles</h1>
+  <p class="text-muted-foreground text-sm mt-0.5">Field dan urutan mengikuti Mikhmon PPPoE</p>
+</div>
+
+{{with .Data}}
+<div class="card mb-6">
+  <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+    <span class="material-symbols-outlined text-primary text-[18px]">add_circle</span>
+    <h3 class="text-sm font-semibold">Add PPP Profiles</h3>
+  </div>
+  <div class="card-content">
+    <form method="POST" action="/ppp/profiles/create" data-loading>
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="space-y-1.5">
+          <label class="label">Name</label>
+          <input type="text" name="name" required placeholder="cth: 10M" class="input"/>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Local Address</label>
+          <input type="text" name="local_address" required placeholder="cth: 10.10.10.1" class="input"/>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Remote Address</label>
+          <select name="remote_address" required class="input">
+            <option value="">== Pilih ==</option>
+            {{range .Pools}}<option value="{{.}}">{{.}}</option>{{end}}
+          </select>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Bridge</label>
+          <select name="bridge" class="input">
+            <option value="">== Pilih ==</option>
+            {{range .Bridges}}<option value="{{.}}">{{.}}</option>{{end}}
+          </select>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Incoming Filter</label>
+          <select name="incoming_filter" class="input">
+            <option value="">== Pilih ==</option>
+            <option value="input">input</option><option value="forward">forward</option><option value="output">output</option>
+          </select>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Outgoing Filter</label>
+          <select name="outgoing_filter" class="input">
+            <option value="">== Pilih ==</option>
+            <option value="input">input</option><option value="forward">forward</option><option value="output">output</option>
+          </select>
+        </div>
+        <div class="space-y-1.5"><label class="label">Address List</label><input type="text" name="address_list" class="input"/></div>
+        <div class="space-y-1.5"><label class="label">DNS Server</label><input type="text" name="dns_server" class="input"/></div>
+        <div class="space-y-1.5"><label class="label">WINS Server</label><input type="text" name="wins_server" class="input"/></div>
+        <div class="space-y-1.5">
+          <label class="label">Change TCP MSS</label>
+          <select name="change_tcp_mss" class="input"><option value="default">default</option><option value="no">no</option><option value="yes">yes</option></select>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Use UPnP</label>
+          <select name="use_upnp" class="input"><option value="default">default</option><option value="no">no</option><option value="yes">yes</option></select>
+        </div>
+        <div class="space-y-1.5"><label class="label">Rate Limit</label><input type="text" name="rate_limit" required placeholder="example: rx/tx" class="input"/></div>
+        <div class="space-y-1.5">
+          <label class="label">Only One</label>
+          <select name="only_one" class="input"><option value="default">default</option><option value="no">no</option><option value="yes">yes</option></select>
+        </div>
+      </div>
+      <div class="mt-4 flex justify-end"><button type="submit" class="btn btn-primary btn-md"><span class="material-symbols-outlined text-[18px]">save</span>Simpan</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto scrollbar-thin">
+    <table class="table">
+      <thead><tr><th>#</th><th>Name</th><th>Local Address</th><th>Remote Address</th><th>Bridge</th><th>Rate Limit</th><th>Only One</th><th class="text-right">Aksi</th></tr></thead>
+      <tbody>
+        {{range $i, $p := .Profiles}}
+        <tr>
+          <td class="text-muted-foreground text-xs">{{add $i 1}}</td>
+          <td><span class="font-semibold">{{$p.Name}}</span>{{if $p.IsDefault}} <span class="badge badge-secondary text-[9px]">default</span>{{end}}</td>
+          <td class="font-mono text-xs">{{if $p.LocalAddress}}{{$p.LocalAddress}}{{else}}—{{end}}</td>
+          <td class="font-mono text-xs">{{if $p.RemoteAddress}}{{$p.RemoteAddress}}{{else}}—{{end}}</td>
+          <td class="text-xs">{{if $p.Bridge}}{{$p.Bridge}}{{else}}—{{end}}</td>
+          <td><code class="bg-muted px-2 py-0.5 rounded text-[11px]">{{if $p.RateLimit}}{{$p.RateLimit}}{{else}}—{{end}}</code></td>
+          <td class="text-xs">{{$p.OnlyOne}}</td>
+          <td><div class="flex items-center justify-end gap-1">
+            <button type="button" class="btn btn-ghost btn-icon btn-sm" onclick="openPPPProfileEdit(this)"
+              data-id="{{$p.ID}}" data-name="{{$p.Name}}" data-local="{{$p.LocalAddress}}" data-remote="{{$p.RemoteAddress}}"
+              data-bridge="{{$p.Bridge}}" data-incoming="{{$p.IncomingFilter}}" data-outgoing="{{$p.OutgoingFilter}}"
+              data-alist="{{$p.AddressList}}" data-dns="{{$p.DNSServer}}" data-wins="{{$p.WINSServer}}"
+              data-tcpmss="{{$p.ChangeTCPMSS}}" data-upnp="{{$p.UseUPnP}}" data-rate="{{$p.RateLimit}}" data-only="{{$p.OnlyOne}}">
+              <span class="material-symbols-outlined text-[16px]">edit</span>
+            </button>
+            {{if not $p.IsDefault}}<form method="POST" action="/ppp/profiles/remove" class="inline" data-loading>
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="id" value="{{$p.ID}}"/>
+              <button type="submit" data-confirm="Hapus profile {{$p.Name}}?" class="btn btn-ghost btn-icon btn-sm hover:text-destructive"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+            </form>{{end}}
+          </div></td>
+        </tr>
+        {{else}}<tr><td colspan="8"><div class="empty-state"><span class="material-symbols-outlined text-[40px]">tune</span><p class="text-sm text-muted-foreground">Belum ada PPP profile.</p></div></td></tr>{{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="ppp-profile-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+  <div class="card w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-xl">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-border"><h3 class="text-sm font-semibold">Edit PPP Profiles</h3><button type="button" onclick="closePPPProfileEdit()" class="btn btn-ghost btn-icon btn-sm"><span class="material-symbols-outlined">close</span></button></div>
+    <form method="POST" action="/ppp/profiles/update" class="p-5" data-loading>
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="id" id="pp-id"/>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="space-y-1"><label class="label">Name</label><input name="name" id="pp-name" class="input" required/></div>
+        <div class="space-y-1"><label class="label">Local Address</label><input name="local_address" id="pp-local" class="input" required/></div>
+        <div class="space-y-1"><label class="label">Remote Address</label><input name="remote_address" id="pp-remote" class="input" required/></div>
+        <div class="space-y-1"><label class="label">Bridge</label><select name="bridge" id="pp-bridge" class="input"><option value="">== Pilih ==</option>{{range .Bridges}}<option value="{{.}}">{{.}}</option>{{end}}</select></div>
+        <div class="space-y-1"><label class="label">Incoming Filter</label><select name="incoming_filter" id="pp-incoming" class="input"><option value="">== Pilih ==</option><option value="input">input</option><option value="forward">forward</option><option value="output">output</option></select></div>
+        <div class="space-y-1"><label class="label">Outgoing Filter</label><select name="outgoing_filter" id="pp-outgoing" class="input"><option value="">== Pilih ==</option><option value="input">input</option><option value="forward">forward</option><option value="output">output</option></select></div>
+        <div class="space-y-1"><label class="label">Address List</label><input name="address_list" id="pp-alist" class="input"/></div>
+        <div class="space-y-1"><label class="label">DNS Server</label><input name="dns_server" id="pp-dns" class="input"/></div>
+        <div class="space-y-1"><label class="label">WINS Server</label><input name="wins_server" id="pp-wins" class="input"/></div>
+        <div class="space-y-1"><label class="label">Change TCP MSS</label><select name="change_tcp_mss" id="pp-tcpmss" class="input"><option value="default">default</option><option value="no">no</option><option value="yes">yes</option></select></div>
+        <div class="space-y-1"><label class="label">Use UPnP</label><select name="use_upnp" id="pp-upnp" class="input"><option value="default">default</option><option value="no">no</option><option value="yes">yes</option></select></div>
+        <div class="space-y-1"><label class="label">Rate Limit</label><input name="rate_limit" id="pp-rate" class="input" required/></div>
+        <div class="space-y-1"><label class="label">Only One</label><select name="only_one" id="pp-only" class="input"><option value="default">default</option><option value="no">no</option><option value="yes">yes</option></select></div>
+      </div>
+      <div class="flex justify-end gap-2 pt-4"><button type="button" onclick="closePPPProfileEdit()" class="btn btn-ghost btn-md">Batal</button><button type="submit" class="btn btn-primary btn-md">Simpan</button></div>
+    </form>
+  </div>
+</div>
+{{end}}
+{{end}}
+
+{{define "scripts"}}
+<script>
+function setPPP(id, value) { var el = document.getElementById(id); if (el) el.value = value || ''; }
+function openPPPProfileEdit(btn) {
+  setPPP('pp-id', btn.dataset.id); setPPP('pp-name', btn.dataset.name); setPPP('pp-local', btn.dataset.local); setPPP('pp-remote', btn.dataset.remote);
+  setPPP('pp-bridge', btn.dataset.bridge); setPPP('pp-incoming', btn.dataset.incoming); setPPP('pp-outgoing', btn.dataset.outgoing); setPPP('pp-alist', btn.dataset.alist);
+  setPPP('pp-dns', btn.dataset.dns); setPPP('pp-wins', btn.dataset.wins); setPPP('pp-tcpmss', btn.dataset.tcpmss || 'default'); setPPP('pp-upnp', btn.dataset.upnp || 'default');
+  setPPP('pp-rate', btn.dataset.rate); setPPP('pp-only', btn.dataset.only || 'default');
+  var m = document.getElementById('ppp-profile-modal'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closePPPProfileEdit() { var m = document.getElementById('ppp-profile-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+document.getElementById('ppp-profile-modal')?.addEventListener('click', function(e) { if (e.target === this) closePPPProfileEdit(); });
+</script>
+{{end}}

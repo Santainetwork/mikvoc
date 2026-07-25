@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MikroTik Manager - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#dad7ff",
+                        "on-tertiary-fixed": "#351000",
+                        "inverse-primary": "#c3c0ff",
+                        "secondary-fixed": "#d3e4fe",
+                        "tertiary-container": "#a44100",
+                        "background": "#f7f9fb",
+                        "on-background": "#191c1e",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container-low": "#f2f4f6",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "surface-variant": "#e0e3e5",
+                        "inverse-on-surface": "#eff1f3",
+                        "outline-variant": "#c7c4d8",
+                        "error-container": "#ffdad6",
+                        "secondary": "#505f76",
+                        "primary-fixed": "#e2dfff",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffb695",
+                        "surface-container": "#eceef0",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "inverse-surface": "#2d3133",
+                        "on-secondary-container": "#54647a",
+                        "tertiary-fixed": "#ffdbcc",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "tertiary": "#7e3000",
+                        "surface-bright": "#f7f9fb",
+                        "on-tertiary-fixed-variant": "#7b2f00",
+                        "surface-container-high": "#e6e8ea",
+                        "on-surface": "#191c1e",
+                        "outline": "#777587",
+                        "on-secondary-fixed": "#0b1c30",
+                        "primary-container": "#4f46e5",
+                        "secondary-container": "#d0e1fb",
+                        "on-surface-variant": "#464555",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#ffd2be",
+                        "surface": "#f7f9fb",
+                        "surface-dim": "#d8dadc",
+                        "primary": "#3525cd",
+                        "on-primary-fixed": "#0f0069",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#4d44e3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "xl": "32px",
+                        "container-max": "1440px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "gutter": "20px",
+                        "sidebar-width": "260px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "h3": ["Inter"],
+                        "h1": ["Inter"],
+                        "mono-data": ["monospace"],
+                        "h2": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "h3": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "h1": ["30px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "mono-data": ["13px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "h2": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-background'); }
+    </style>
+</head>
+<body class="font-body-md text-body-md antialiased min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-[260px] bg-slate-900 border-r border-slate-800 shadow-xl flex flex-col h-full py-6 z-50">
+<div class="px-6 mb-8 flex items-center gap-3">
+<span class="material-symbols-outlined text-indigo-400" style="font-variation-settings: 'FILL' 1;">router</span>
+<div class="text-xl font-bold tracking-tight text-white">MikroTik Admin</div>
+</div>
+<div class="px-6 mb-6">
+<div class="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
+<img alt="Admin Avatar" class="w-10 h-10 rounded-full object-cover" data-alt="A professional headshot of a network administrator, conveying reliability and expertise in a corporate setting. The lighting is balanced and natural, fitting a modern IT environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuANy16Cg1YuTFPn2CxPIvg15rYp6kN3lfLkZoCFK1J4Qonxzn4_Z9wRYKhEC4S_QEWpMFdusAOMWZ22nqQxZEIPax054lCT-LAWFF6VoY-tdh1M8TFCC2CuHTksJlicJ55-PA-UTQxgfS5Xgpl4co7d3feWlPdc5uueUK6PjZy3lXLMw9w6MmDHj8aVxpnxy9l55tDys8rE1QUtzIwoz92ipkQG5koQjPavacrJQYPLcKK8KD3NI0GDReB183AM6RhToxN7n447VKlM"/>
+<div>
+<div class="font-label-caps text-label-caps text-white">Admin Avatar</div>
+<div class="font-body-sm text-body-sm text-slate-400">Network Operator</div>
+</div>
+</div>
+</div>
+<div class="flex-1 px-2 space-y-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-4 py-3 bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-semibold scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 duration-150 scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="confirmation_number">confirmation_number</span>
+<span>Voucher Generator</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 duration-150 scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>User List</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 duration-150 scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="settings_input_component">settings_input_component</span>
+<span>Profiles</span>
+</a>
+</div>
+<div class="px-4 mt-auto space-y-4">
+<button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-body-md text-body-md py-2.5 rounded-DEFAULT transition-colors">
+                Generate Vouchers
+            </button>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 duration-150 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-slate-100 transition-colors hover:bg-slate-800/50 duration-150 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="ml-[260px] flex-1 flex flex-col min-h-screen max-w-[1440px]">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+<div class="flex items-center justify-between h-16 px-8">
+<div class="flex items-center gap-8">
+<div class="text-lg font-black text-slate-900">MikroTik Manager</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="font-inter text-sm font-medium text-slate-600 hover:text-indigo-500 transition-colors opacity-80 hover:opacity-100" href="#">Network Status</a>
+<a class="font-inter text-sm font-medium text-slate-600 hover:text-indigo-500 transition-colors opacity-80 hover:opacity-100" href="#">Logs</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<button class="font-inter text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors opacity-80 hover:opacity-100">System Reboot</button>
+<div class="flex items-center gap-4">
+<button class="text-slate-600 hover:text-indigo-500 transition-colors opacity-80 hover:opacity-100">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-slate-600 hover:text-indigo-500 transition-colors opacity-80 hover:opacity-100">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+</div>
+<img alt="Admin Profile" class="w-8 h-8 rounded-full border border-slate-200" data-alt="A professional headshot of a network administrator, conveying reliability and expertise in a corporate setting. The lighting is balanced and natural, fitting a modern IT environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfchu9QblrA9IaExVwLriLVnzLfbDtgG37VmWATJs2di7jgZit6J2EiD2ZAwImQTO9NzxpP7iDN3BcTj8o9RWZw6CwZLa8oeKhZ3ptvOVxRy_OvyHsO05Y9n1VIWwZ3fUGV0IuhMrEui7llW-rQg25rHClSiBG79KFNIILvnKqJ3PJQt-56wSniKTQWArc955GmjoBEN1u9NZ54D_MctQc3MHDw-s8Gvh_30CdzzVrwxqxZ3bc8qyO9m4UdCX7FARcTxsck029_roD"/>
+</div>
+</div>
+</header>
+<!-- Dashboard Content -->
+<main class="flex-1 p-lg overflow-y-auto">
+<div class="mb-lg flex justify-between items-end">
+<div>
+<h1 class="font-h1 text-h1 text-on-surface">Overview</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">System status and network metrics for RouterOS-1</p>
+</div>
+<div class="flex gap-4">
+<select class="bg-surface-container-lowest border border-outline-variant text-on-surface font-body-sm text-body-sm rounded-DEFAULT px-4 py-2 focus:border-primary focus:ring-0">
+<option>RouterOS-1 (Main)</option>
+<option>RouterOS-2 (Backup)</option>
+</select>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-4 gap-lg">
+<!-- Metrics Row -->
+<div class="xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
+<!-- CPU Load -->
+<div class="bg-surface-container-lowest rounded-xl border border-surface-variant p-md shadow-[0_4px_12px_rgba(0,0,0,0.02)] relative overflow-hidden group">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">CPU Load</span>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">memory</span>
+</div>
+<div class="font-h2 text-h2 text-on-surface">14%</div>
+<div class="mt-2 w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 14%"></div>
+</div>
+</div>
+<!-- RAM Usage -->
+<div class="bg-surface-container-lowest rounded-xl border border-surface-variant p-md shadow-[0_4px_12px_rgba(0,0,0,0.02)] relative overflow-hidden">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">RAM Usage</span>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">developer_board</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-h2 text-h2 text-on-surface">428</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">MB / 1024 MB</span>
+</div>
+<div class="mt-2 w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 41%"></div>
+</div>
+</div>
+<!-- Uptime -->
+<div class="bg-surface-container-lowest rounded-xl border border-surface-variant p-md shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Uptime</span>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">schedule</span>
+</div>
+<div class="font-h2 text-h2 text-on-surface">42d 18h</div>
+<div class="mt-2 font-body-sm text-body-sm text-secondary">Since last reboot</div>
+</div>
+<!-- Active Users -->
+<div class="bg-surface-container-lowest rounded-xl border border-surface-variant p-md shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Active Users</span>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">group</span>
+</div>
+<div class="font-h2 text-h2 text-on-surface">1,204</div>
+<div class="mt-2 font-body-sm text-body-sm text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-[#2e7d32]">trending_up</span>
+<span class="text-[#2e7d32]">+12%</span> today
+                        </div>
+</div>
+</div>
+<!-- Main Chart Area -->
+<div class="xl:col-span-3 bg-surface-container-lowest rounded-xl border border-surface-variant p-lg shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h3 class="font-h3 text-h3 text-on-surface">Traffic Monitor (wlan1)</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Real-time throughput analysis</p>
+</div>
+<div class="flex gap-2 bg-surface-container-low p-1 rounded-DEFAULT">
+<button class="px-3 py-1 font-body-sm text-body-sm bg-white shadow-sm rounded-DEFAULT text-on-surface">1H</button>
+<button class="px-3 py-1 font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface">24H</button>
+<button class="px-3 py-1 font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface">7D</button>
+</div>
+</div>
+<!-- Simulated Chart Area -->
+<div class="relative h-[300px] w-full border-b border-l border-surface-variant flex items-end pt-4 pr-4">
+<!-- Y Axis Labels -->
+<div class="absolute left-[-40px] h-full flex flex-col justify-between font-mono-data text-mono-data text-on-surface-variant text-right w-8 pb-6">
+<span>100M</span>
+<span>75M</span>
+<span>50M</span>
+<span>25M</span>
+<span>0</span>
+</div>
+<!-- Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pt-4 pb-6 ml-1">
+<div class="w-full border-t border-surface-variant border-dashed opacity-50"></div>
+<div class="w-full border-t border-surface-variant border-dashed opacity-50"></div>
+<div class="w-full border-t border-surface-variant border-dashed opacity-50"></div>
+<div class="w-full border-t border-surface-variant border-dashed opacity-50"></div>
+</div>
+<!-- Graph Path (Simulated with SVG for premium feel) -->
+<svg class="w-full h-[calc(100%-24px)] z-10" preserveaspectratio="none" viewbox="0 0 1000 100">
+<defs>
+<lineargradient id="txGradient" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="theme('colors.primary')" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="theme('colors.primary')" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<!-- RX Line -->
+<path d="M0,80 Q50,70 100,50 T200,60 T300,40 T400,60 T500,30 T600,50 T700,20 T800,40 T900,10 T1000,30 L1000,100 L0,100 Z" fill="url(#txGradient)"></path>
+<path d="M0,80 Q50,70 100,50 T200,60 T300,40 T400,60 T500,30 T600,50 T700,20 T800,40 T900,10 T1000,30" fill="none" stroke="theme('colors.primary')" stroke-width="2"></path>
+<!-- TX Line -->
+<path d="M0,90 Q50,85 100,75 T200,80 T300,65 T400,75 T500,55 T600,65 T700,45 T800,60 T900,35 T1000,50" fill="none" stroke="#a44100" stroke-dasharray="4,4" stroke-width="2"></path>
+</svg>
+<!-- X Axis Labels -->
+<div class="absolute bottom-0 w-full flex justify-between font-mono-data text-mono-data text-on-surface-variant pt-2 pl-1">
+<span>10:00</span>
+<span>10:15</span>
+<span>10:30</span>
+<span>10:45</span>
+<span>11:00</span>
+</div>
+</div>
+<div class="mt-4 flex gap-6 justify-center">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">RX (Download)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-[#a44100]"></div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">TX (Upload)</span>
+</div>
+</div>
+</div>
+<!-- Right Side Feed -->
+<div class="xl:col-span-1 bg-surface-container-lowest rounded-xl border border-surface-variant p-md shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col h-full">
+<h3 class="font-h3 text-h3 text-on-surface mb-6">Recent Activity</h3>
+<div class="flex-1 space-y-6">
+<!-- Activity Item -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">login</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface">User <span class="font-mono-data text-mono-data">user_789</span> authenticated via Hotspot</p>
+<span class="font-label-caps text-label-caps text-secondary mt-1 block">2 mins ago</span>
+</div>
+</div>
+<!-- Activity Item -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-error-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px] text-on-error-container">warning</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface">High CPU usage detected (89%) on main core</p>
+<span class="font-label-caps text-label-caps text-secondary mt-1 block">15 mins ago</span>
+</div>
+</div>
+<!-- Activity Item -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-[#e8f5e9] flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px] text-[#2e7d32]">receipt_long</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface">Batch of 50 vouchers generated successfully</p>
+<span class="font-label-caps text-label-caps text-secondary mt-1 block">1 hour ago</span>
+</div>
+</div>
+<!-- Activity Item -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">wifi_off</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface">Interface <span class="font-mono-data text-mono-data">ether2</span> link down</p>
+<span class="font-label-caps text-label-caps text-secondary mt-1 block">3 hours ago</span>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 py-2 border border-outline-variant rounded-DEFAULT font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low transition-colors">
+                        View All Logs
+                    </button>
+</div>
+</div>
+</main>
+</div>
+</body></html>

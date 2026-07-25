@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  {{template "head" .}}
+  <style>
+    @keyframes float { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-20px) scale(1.05)} }
+    .blob { animation: float 8s ease-in-out infinite; }
+    .blob-2 { animation-delay: -4s; animation-duration: 10s; }
+  </style>
+</head>
+<body class="bg-background text-foreground min-h-screen flex items-center justify-center relative overflow-hidden">
+
+  <!-- Ambient background blobs -->
+  <div class="blob absolute top-[-10%] left-[-5%] w-96 h-96 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="blob blob-2 absolute bottom-[-10%] right-[-5%] w-80 h-80 bg-primary/15 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="blob absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-2xl pointer-events-none" style="animation-delay:-2s"></div>
+
+  <div class="relative z-10 w-full max-w-sm px-4">
+    <!-- Card -->
+    <div class="card backdrop-blur-xl p-8 shadow-2xl">
+
+      <!-- Logo -->
+      <div class="flex flex-col items-center mb-8">
+        <div class="w-14 h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-2xl font-black shadow-lg shadow-primary/40 mb-4">M</div>
+        <h1 class="text-2xl font-black tracking-tight">MikVoc</h1>
+        <p class="text-muted-foreground text-sm mt-1">Panel Manajemen Hotspot Mikrotik</p>
+      </div>
+
+      <!-- Form -->
+      <form method="POST" action="/login" data-loading class="space-y-4">
+        <div class="space-y-1.5">
+          <label for="username" class="label">Username</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[18px] pointer-events-none">person</span>
+            <input id="username" name="username" type="text" required autofocus
+              placeholder="admin" class="input pl-10"/>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label for="password" class="label">Password</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[18px] pointer-events-none">lock</span>
+            <input id="password" name="password" type="password" required
+              placeholder="••••••••" class="input pl-10"/>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-md w-full mt-2">
+          <span class="material-symbols-outlined text-[18px]">login</span>
+          Masuk
+        </button>
+      </form>
+
+      <p class="text-center text-muted-foreground text-xs mt-6">MikVoc v2.0 &mdash; Hotspot Manager</p>
+      <p class="text-center text-muted-foreground/70 text-[10px] mt-1">Developed by SantaiNetwork &copy; 2026</p>
+    </div>
+  </div>
+
+  {{template "toasts" .}}
+  <script src="/static/js/main.js?v=busy1"></script>
+</body>
+</html>

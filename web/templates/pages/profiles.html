@@ -1,0 +1,335 @@
+{{template "layout" .}}
+{{define "content"}}
+
+<div class="mb-6 flex items-center justify-between flex-wrap gap-3">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Hotspot Profiles</h1>
+    <p class="text-muted-foreground text-sm mt-0.5">Daftar profil user Mikrotik</p>
+  </div>
+</div>
+
+{{with .Data}}
+
+<!-- Create Form -->
+<div class="card mb-6">
+  <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+    <span class="material-symbols-outlined text-primary text-[18px]">add_circle</span>
+    <h3 class="text-sm font-semibold">Buat Profil Baru</h3>
+  </div>
+  <div class="card-content">
+    <form method="POST" action="/hotspot/profiles/create" data-loading>
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="space-y-1.5">
+          <label class="label">Name</label>
+          <input type="text" name="name" required placeholder="cth: 1JAM-2K" class="input"/>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Address Pool</label>
+          <select name="address_pool" class="input">
+            <option value="none">none</option>
+            {{range .Pools}}<option value="{{.}}">{{.}}</option>{{end}}
+          </select>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Shared Users</label>
+          <input type="text" name="shared_users" value="1" required class="input"/>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Rate Limit [up/down]</label>
+          <input type="text" name="rate_limit" placeholder="cth: 512k/1M" class="input"/>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Expired Mode</label>
+          <select name="expired_mode" class="input">
+            <option value="none">None</option>
+            <option value="remove">Remove</option>
+            <option value="notice">Notice</option>
+            <option value="remove_record">Remove &amp; Record</option>
+            <option value="notice_record">Notice &amp; Record</option>
+          </select>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Validity</label>
+          <input type="text" name="validity" placeholder="cth: 1d, 12h, 30d" class="input"/>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Grace Period</label>
+          <input type="text" name="grace_period" value="5m" placeholder="5m" class="input"/>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Price ({{$.Currency}})</label>
+          <input type="number" name="price" min="0" placeholder="0" class="input"/>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Selling Price ({{$.Currency}})</label>
+          <input type="number" name="sprice" min="0" placeholder="0" class="input"/>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Lock User</label>
+          <select name="lock_mac" class="input">
+            <option value="0">Disable</option>
+            <option value="1">Enable</option>
+          </select>
+        </div>
+        <div class="space-y-1.5">
+          <label class="label">Parent Queue</label>
+          <select name="parent_queue" class="input">
+            <option value="none">none</option>
+            {{range .Queues}}<option value="{{.}}">{{.}}</option>{{end}}
+          </select>
+        </div>
+      </div>
+      <div class="mt-4 flex justify-end">
+        <button type="submit" class="btn btn-primary btn-md">
+          <span class="material-symbols-outlined text-[18px]">save</span>
+          Buat Profil
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Profile List Table -->
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto scrollbar-thin">
+    <table class="table">
+      <thead>
+        <tr>
+          <th class="w-10">#</th>
+          <th>Nama Profil</th>
+          <th>Shared</th>
+          <th>Rate Limit</th>
+          <th>Masa Aktif</th>
+          <th>Harga / Jual</th>
+          <th>Expired</th>
+          <th class="text-right">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="profiles-tbody">
+        {{range $i, $p := .Profiles}}
+        <!-- View Row -->
+        <tr id="row-view-{{$p.ID}}">
+          <td class="text-muted-foreground text-xs">{{add $i 1}}</td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="font-semibold">{{$p.Name}}</span>
+              {{if $p.IsDefault}}
+              <span class="badge badge-secondary text-[9px]">bawaan</span>
+              {{end}}
+            </div>
+          </td>
+          <td class="text-xs">
+            {{if $p.SharedUsers}}{{$p.SharedUsers}}{{else}}<span class="text-muted-foreground">—</span>{{end}}
+          </td>
+          <td>
+            <code class="bg-muted text-foreground px-2 py-0.5 rounded text-[11px] font-mono">{{if $p.RateLimit}}{{$p.RateLimit}}{{else}}—{{end}}</code>
+          </td>
+          <td class="text-xs font-semibold">
+            {{if $p.Validity}}{{$p.Validity}}{{else}}<span class="text-muted-foreground font-normal">—</span>{{end}}
+          </td>
+          <td class="text-success font-medium text-xs">
+            {{if $p.Price}}{{$.Currency}} {{$p.Price}}{{else}}—{{end}}
+            {{if $p.SellingPrice}} / {{$.Currency}} {{$p.SellingPrice}}{{end}}
+          </td>
+          <td class="text-muted-foreground text-[11px] uppercase tracking-wider font-semibold">
+            {{if $p.ExpiredMode}}{{$p.ExpiredMode}}{{else}}NONE{{end}}
+          </td>
+          <td>
+            <div class="flex items-center justify-end gap-1">
+              <button type="button" onclick="openEdit('{{$p.ID}}')" title="Edit Profil" class="btn btn-ghost btn-icon btn-sm">
+                <span class="material-symbols-outlined text-[16px]">edit</span>
+              </button>
+              <button type="button" onclick="openClone('{{$p.ID}}')" title="Clone Profil" class="btn btn-ghost btn-icon btn-sm hover:text-success">
+                <span class="material-symbols-outlined text-[16px]">content_copy</span>
+              </button>
+              <form method="POST" action="/hotspot/profiles/monitor" class="inline">
+                <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                <input type="hidden" name="profile_name" value="{{$p.Name}}"/>
+                {{if $p.HasMonitor}}
+                <input type="hidden" name="action" value="disable"/>
+                <button type="submit" title="Nonaktifkan Monitor Scheduler" class="btn btn-ghost btn-icon btn-sm text-success">
+                  <span class="material-symbols-outlined text-[16px]">schedule</span>
+                </button>
+                {{else}}
+                <input type="hidden" name="action" value="enable"/>
+                <button type="submit" title="Aktifkan Monitor Scheduler" class="btn btn-ghost btn-icon btn-sm">
+                  <span class="material-symbols-outlined text-[16px]">schedule</span>
+                </button>
+                {{end}}
+              </form>
+              {{if not $p.IsDefault}}
+              <form method="POST" action="/hotspot/profiles/remove" class="inline" data-loading data-loading-text="Menghapus profil... Jangan refresh.">
+                <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                <input type="hidden" name="id" value="{{$p.ID}}"/>
+                <button type="submit" data-confirm="Hapus profil {{$p.Name}}?" class="btn btn-ghost btn-icon btn-sm hover:text-destructive" title="Hapus Profil">
+                  <span class="material-symbols-outlined text-[16px]">delete</span>
+                </button>
+              </form>
+              {{end}}
+            </div>
+          </td>
+        </tr>
+        <!-- Edit Row (hidden by default) -->
+        <tr id="row-edit-{{$p.ID}}" class="hidden bg-primary/5 border-l-2 border-primary">
+          <td class="text-muted-foreground text-xs align-top pt-4">✏️</td>
+          <td colspan="7">
+            <form method="POST" action="/hotspot/profiles/update" class="space-y-3" data-loading>
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <input type="hidden" name="id" value="{{$p.ID}}"/>
+              <input type="hidden" name="name" value="{{$p.Name}}"/>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="space-y-1">
+                  <label class="label text-[10px]">Nama Profil</label>
+                  <input type="text" value="{{$p.Name}}" disabled class="input h-8 text-xs bg-muted cursor-not-allowed"/>
+                  <p class="text-[10px] text-muted-foreground">Nama tidak bisa diubah</p>
+                </div>
+                <div class="space-y-1">
+                  <label class="label text-[10px]">Shared Users</label>
+                  <input type="text" name="shared_users" value="{{$p.SharedUsers}}" placeholder="1" class="input h-8 text-xs"/>
+                </div>
+                <div class="space-y-1">
+                  <label class="label text-[10px]">Rate Limit</label>
+                  <input type="text" name="rate_limit" value="{{$p.RateLimit}}" placeholder="1M/1M" class="input h-8 text-xs"/>
+                </div>
+                <div class="space-y-1">
+                  <label class="label text-[10px]">Price ({{$.Currency}})</label>
+                  <input type="number" name="price" value="{{$p.Price}}" placeholder="0" class="input h-8 text-xs"/>
+                </div>
+                <div class="space-y-1">
+                  <label class="label text-[10px]">Address Pool</label>
+                  <select name="address_pool" class="input h-8 text-xs">
+                    <option value="{{$p.AddressPool}}" selected>{{if $p.AddressPool}}{{$p.AddressPool}}{{else}}none{{end}}</option>
+                    <option value="none">none</option>
+                    {{range $.Data.Pools}}<option value="{{.}}">{{.}}</option>{{end}}
+                  </select>
+                </div>
+                <div class="space-y-1">
+                  <label class="label text-[10px]">Parent Queue</label>
+                  <select name="parent_queue" class="input h-8 text-xs">
+                    <option value="{{$p.ParentQueue}}" selected>{{if $p.ParentQueue}}{{$p.ParentQueue}}{{else}}none{{end}}</option>
+                    <option value="none">none</option>
+                    {{range $.Data.Queues}}<option value="{{.}}">{{.}}</option>{{end}}
+                  </select>
+                </div>
+                <div class="space-y-1">
+                  <label class="label text-[10px]">Expired Mode</label>
+                  <select name="expired_mode" class="input h-8 text-xs">
+                    <option value="none" {{if or (eq $p.ExpiredMode "none") (eq $p.ExpiredMode "")}}selected{{end}}>None</option>
+                    <option value="remove" {{if eq $p.ExpiredMode "remove"}}selected{{end}}>Remove</option>
+                    <option value="notice" {{if eq $p.ExpiredMode "notice"}}selected{{end}}>Notice</option>
+                    <option value="remove_record" {{if eq $p.ExpiredMode "remove_record"}}selected{{end}}>Remove &amp; Record</option>
+                    <option value="notice_record" {{if eq $p.ExpiredMode "notice_record"}}selected{{end}}>Notice &amp; Record</option>
+                  </select>
+                </div>
+                <div class="space-y-1">
+                  <label class="label text-[10px]">Masa Aktif</label>
+                  <input type="text" name="validity" value="{{$p.Validity}}" placeholder="1d, 12h..." class="input h-8 text-xs"/>
+                </div>
+                <div class="space-y-1">
+                  <label class="label text-[10px]">Grace Period</label>
+                  <input type="text" name="grace_period" value="{{if $p.GracePeriod}}{{$p.GracePeriod}}{{else}}5m{{end}}" class="input h-8 text-xs"/>
+                </div>
+                <div class="space-y-1">
+                  <label class="label text-[10px]">Selling Price ({{$.Currency}})</label>
+                  <input type="number" name="sprice" value="{{$p.SellingPrice}}" placeholder="0" class="input h-8 text-xs"/>
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-1">
+                <label class="flex items-center gap-2 text-xs font-medium">Lock User
+                  <select name="lock_mac" class="input h-8 text-xs w-28">
+                    <option value="0" {{if not $p.LockMac}}selected{{end}}>Disable</option>
+                    <option value="1" {{if $p.LockMac}}selected{{end}}>Enable</option>
+                  </select>
+                </label>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="closeEdit('{{$p.ID}}')" class="btn btn-outline btn-sm">Batal</button>
+                  <button type="submit" class="btn btn-primary btn-sm">
+                    <span class="material-symbols-outlined text-[14px]">save</span>
+                    Simpan
+                  </button>
+                </div>
+              </div>
+            </form>
+          </td>
+        </tr>
+        <!-- Clone Row (hidden by default) -->
+        <tr id="row-clone-{{$p.ID}}" class="hidden bg-success/5 border-l-2 border-success">
+          <td class="text-muted-foreground text-xs align-top pt-4">⧉</td>
+          <td colspan="7">
+            <form method="POST" action="/hotspot/profiles/clone" class="space-y-3" data-loading>
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <input type="hidden" name="source_id" value="{{$p.ID}}"/>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                  <label class="label text-[10px]">Sumber Profil</label>
+                  <input type="text" value="{{$p.Name}}" disabled class="input h-8 text-xs bg-muted cursor-not-allowed"/>
+                  <p class="text-[10px] text-muted-foreground">Konfigurasi akan disalin ke profil baru</p>
+                </div>
+                <div class="space-y-1">
+                  <label class="label text-[10px]">Nama Profil Baru</label>
+                  <input type="text" name="name" value="{{$p.Name}}-copy" placeholder="{{$p.Name}}-copy" class="input h-8 text-xs"/>
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-1">
+                <div class="text-[11px] text-muted-foreground">
+                  Shared {{if $p.SharedUsers}}{{$p.SharedUsers}}{{else}}—{{end}} · Rate {{if $p.RateLimit}}{{$p.RateLimit}}{{else}}—{{end}} · Validity {{if $p.Validity}}{{$p.Validity}}{{else}}—{{end}}
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="closeClone('{{$p.ID}}')" class="btn btn-outline btn-sm">Batal</button>
+                  <button type="submit" class="btn btn-success btn-sm">
+                    <span class="material-symbols-outlined text-[14px]">content_copy</span>
+                    Clone
+                  </button>
+                </div>
+              </div>
+            </form>
+          </td>
+        </tr>
+        {{else}}
+        <tr>
+          <td colspan="8">
+            <div class="empty-state">
+              <span class="material-symbols-outlined text-muted-foreground text-[40px]">dns</span>
+              <p class="text-muted-foreground text-sm">Tidak ada profil ditemukan.</p>
+            </div>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  <div class="px-6 py-3 border-t border-border flex items-center justify-between">
+    <span class="text-xs text-muted-foreground">Total: <span class="text-foreground font-medium">{{len .Profiles}}</span> profil</span>
+  </div>
+</div>
+{{end}}
+
+<script>
+function openEdit(id) {
+  document.querySelectorAll('[id^="row-edit-"]').forEach(r => r.classList.add('hidden'));
+  document.querySelectorAll('[id^="row-clone-"]').forEach(r => r.classList.add('hidden'));
+  const editRow = document.getElementById('row-edit-' + id);
+  if (editRow) {
+    editRow.classList.remove('hidden');
+    editRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+function closeEdit(id) {
+  document.getElementById('row-edit-' + id)?.classList.add('hidden');
+}
+function openClone(id) {
+  document.querySelectorAll('[id^="row-clone-"]').forEach(r => r.classList.add('hidden'));
+  document.querySelectorAll('[id^="row-edit-"]').forEach(r => r.classList.add('hidden'));
+  const cloneRow = document.getElementById('row-clone-' + id);
+  if (cloneRow) {
+    cloneRow.classList.remove('hidden');
+    cloneRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+function closeClone(id) {
+  document.getElementById('row-clone-' + id)?.classList.add('hidden');
+}
+</script>
+
+{{end}}
