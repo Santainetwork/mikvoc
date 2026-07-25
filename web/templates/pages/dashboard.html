@@ -94,8 +94,8 @@
         </span>
       </div>
       <select id="iface-select" class="input h-8 text-xs w-auto">
-        {{range .Servers}}
-        <option value="{{index . "interface"}}">{{index . "interface"}} ({{index . "name"}})</option>
+        {{range .Interfaces}}
+        <option value="{{index . "name"}}">{{index . "name"}}{{if index . "type"}} ({{index . "type"}}){{end}}</option>
         {{else}}
         <option value="ether1">ether1</option>
         {{end}}

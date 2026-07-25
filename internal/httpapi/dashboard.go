@@ -36,6 +36,7 @@ func (a *App) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 		MemUsedPct  int
 		Health      routerHealthSummary
 		Servers     []map[string]string
+		Interfaces  []map[string]string
 	}
 
 	d := DashData{
@@ -52,6 +53,7 @@ func (a *App) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 		MemUsedPct:  0,
 		Health:      dashboardHealthSummary(false, 0, 0),
 		Servers:     []map[string]string{},
+		Interfaces:  []map[string]string{},
 	}
 
 	connected := false
@@ -74,6 +76,9 @@ func (a *App) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 			if sum.Servers != nil {
 				d.Servers = sum.Servers
 			}
+			if sum.Interfaces != nil {
+				d.Interfaces = sum.Interfaces
+			}
 		}
 	} else {
 		cl := a.clientFor(r)
@@ -93,6 +98,10 @@ func (a *App) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 			servers, _ := cl.GetServers()
 			if servers != nil {
 				d.Servers = servers
+			}
+			interfaces, _ := cl.GetInterfaces()
+			if interfaces != nil {
+				d.Interfaces = interfaces
 			}
 		}
 	}

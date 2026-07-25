@@ -20,6 +20,7 @@ type Summary struct {
 	UserCount   int
 	ActiveCount int
 	Servers     []map[string]string
+	Interfaces  []map[string]string
 }
 
 type Traffic struct {
@@ -33,8 +34,9 @@ func (s *StatsService) Summary(routerID int) (Summary, error) {
 		return Summary{Connected: false}, nil
 	}
 	sum := Summary{
-		Connected: true,
-		Servers:   []map[string]string{},
+		Connected:  true,
+		Servers:    []map[string]string{},
+		Interfaces: []map[string]string{},
 	}
 	res, _ := cl.GetSystemResource()
 	if res != nil {
@@ -45,6 +47,10 @@ func (s *StatsService) Summary(routerID int) (Summary, error) {
 	servers, _ := cl.GetServers()
 	if servers != nil {
 		sum.Servers = servers
+	}
+	interfaces, _ := cl.GetInterfaces()
+	if interfaces != nil {
+		sum.Interfaces = interfaces
 	}
 	return sum, nil
 }
