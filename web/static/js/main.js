@@ -1,6 +1,39 @@
 // MikVoc main.js — shared utilities
 
 (function () {
+  const themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', function () {
+      const dark = !document.documentElement.classList.contains('dark');
+      document.documentElement.classList.toggle('dark', dark);
+      try {
+        localStorage.setItem('mikvocTheme', dark ? 'dark' : 'light');
+      } catch (e) {}
+    });
+  }
+
+  const sidebarSections = document.querySelectorAll('[data-sidebar-section]');
+  if (sidebarSections.length) {
+    let saved = {};
+    try {
+      saved = JSON.parse(localStorage.getItem('mikvocSidebarSections') || '{}') || {};
+    } catch (e) {}
+    sidebarSections.forEach(function (section) {
+      const key = section.dataset.sidebarSection;
+      if (section.dataset.active === 'true') {
+        section.open = true;
+      } else if (typeof saved[key] === 'boolean') {
+        section.open = saved[key];
+      }
+      section.addEventListener('toggle', function () {
+        saved[key] = section.open;
+        try {
+          localStorage.setItem('mikvocSidebarSections', JSON.stringify(saved));
+        } catch (e) {}
+      });
+    });
+  }
+
   function readCookie(name) {
     const parts = (document.cookie || '').split(';');
     for (let i = 0; i < parts.length; i++) {

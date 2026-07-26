@@ -7,6 +7,8 @@
 <meta name="author" content="SantaiNetwork" />
 <meta name="copyright" content="Copyright (c) 2026 SantaiNetwork" />
 <meta name="keywords" content="MikVoc, MikroTik, hotspot, voucher, PPPoE, SantaiNetwork" />
+<meta name="color-scheme" content="light dark" />
+<meta name="mikvoc-server-theme" content="{{.Theme}}" />
 <meta name="csrf-token" content="{{.CSRFToken}}" />
 <script>window.__MIKVOC_CSRF__=(document.querySelector('meta[name="csrf-token"]')||{}).content||'';</script>
 <script>
@@ -33,13 +35,18 @@
 <link rel="preload" href="/static/fonts/Inter-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="/static/css/app.css" as="style" />
 <link rel="stylesheet" href="/static/css/app.css" />
+<style>details[open] .sidebar-section-chevron{transform:rotate(180deg)}summary::-webkit-details-marker{display:none}</style>
 <script>
   (function() {
     try {
-      var t = localStorage.getItem("theme");
-      if (t === "dark" || (t === null && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
-        document.documentElement.classList.add("dark");
-      }
+      var t = localStorage.getItem('mikvocTheme') || localStorage.getItem('theme');
+      var server = (document.querySelector('meta[name="mikvoc-server-theme"]') || {}).content;
+      if (t !== 'dark' && t !== 'light') t = server === 'dark' || server === 'light' ? server : '';
+      if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.classList.toggle('dark', t === 'dark');
+      document.documentElement.dataset.serverTheme = server || '';
+      localStorage.setItem('mikvocTheme', t);
+      localStorage.removeItem('theme');
     } catch (e) {}
   })();
 </script>

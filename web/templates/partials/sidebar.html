@@ -48,39 +48,45 @@
   </div>
 
   <!-- Nav -->
-  <nav class="flex-1 overflow-y-auto scrollbar-thin px-2 py-2 space-y-0.5">
-    <p class="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Utama</p>
-    {{template "nav-item" (dict "Href" "/routers" "ActiveMenu" .ActiveMenu "Match" "routers" "Icon" "router" "Label" "Sesi Router")}}
-    {{template "nav-item" (dict "Href" "/dashboard" "ActiveMenu" .ActiveMenu "Match" "dashboard" "Icon" "dashboard" "Label" "Dashboard")}}
-    {{template "nav-item" (dict "Href" "/hotspot/active" "ActiveMenu" .ActiveMenu "Match" "active" "Icon" "wifi" "Label" "Hotspot Aktif" "Dot" .Connected)}}
-    {{template "nav-item" (dict "Href" "/report" "ActiveMenu" .ActiveMenu "Match" "report" "Icon" "monitoring" "Label" "Laporan")}}
-
-    <p class="px-3 mt-4 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Hotspot</p>
-    {{template "nav-item" (dict "Href" "/hotspot/generate" "ActiveMenu" .ActiveMenu "Match" "generate" "Icon" "confirmation_number" "Label" "Generate")}}
-    {{template "nav-item" (dict "Href" "/hotspot/users" "ActiveMenu" .ActiveMenu "Match" "users" "Icon" "group" "Label" "User List")}}
-    {{template "nav-item" (dict "Href" "/hotspot/profiles" "ActiveMenu" .ActiveMenu "Match" "profiles" "Icon" "dns" "Label" "Profiles")}}
-    {{template "nav-item" (dict "Href" "/hotspot/hosts" "ActiveMenu" .ActiveMenu "Match" "hosts" "Icon" "devices" "Label" "Hosts")}}
-    {{template "nav-item" (dict "Href" "/hotspot/ip-bindings" "ActiveMenu" .ActiveMenu "Match" "ip-bindings" "Icon" "link" "Label" "IP Bindings")}}
-    {{template "nav-item" (dict "Href" "/hotspot/cookies" "ActiveMenu" .ActiveMenu "Match" "cookies" "Icon" "cookie" "Label" "Cookies")}}
-    {{template "nav-item" (dict "Href" "/hotspot/servers" "ActiveMenu" .ActiveMenu "Match" "servers" "Icon" "dns" "Label" "Servers")}}
-    {{template "nav-item" (dict "Href" "/hotspot/server-profiles" "ActiveMenu" .ActiveMenu "Match" "server-profiles" "Icon" "tune" "Label" "Server Profiles")}}
-
-    <p class="px-3 mt-4 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">PPPoE</p>
-    {{template "nav-item" (dict "Href" "/ppp/generate" "ActiveMenu" .ActiveMenu "Match" "ppp-generate" "Icon" "person_add" "Label" "Generate Secret")}}
-    {{template "nav-item" (dict "Href" "/ppp/secrets" "ActiveMenu" .ActiveMenu "Match" "ppp-secrets" "Icon" "key" "Label" "PPP Secrets")}}
-    {{template "nav-item" (dict "Href" "/ppp/active" "ActiveMenu" .ActiveMenu "Match" "ppp-active" "Icon" "lan" "Label" "PPP Aktif" "Dot" .Connected)}}
-    {{template "nav-item" (dict "Href" "/ppp/profiles" "ActiveMenu" .ActiveMenu "Match" "ppp-profiles" "Icon" "tune" "Label" "PPP Profiles")}}
-
-    <p class="px-3 mt-4 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Sistem</p>
-    {{template "nav-item" (dict "Href" "/template" "ActiveMenu" .ActiveMenu "Match" "template" "Icon" "web" "Label" "Template Hotspot")}}
-    {{template "nav-item" (dict "Href" "/settings" "ActiveMenu" .ActiveMenu "Match" "settings" "Icon" "settings" "Label" "Pengaturan")}}
-    {{if or (eq .AdminRole "owner") (eq .AdminRole "operator") (eq .AdminRole "")}}
-    {{if ne .AdminRole "viewer"}}{{template "nav-item" (dict "Href" "/system/log" "ActiveMenu" .ActiveMenu "Match" "system-log" "Icon" "terminal" "Label" "System Log")}}{{end}}
-    {{template "nav-item" (dict "Href" "/settings/audit" "ActiveMenu" .ActiveMenu "Match" "audit" "Icon" "history" "Label" "Audit Log")}}
-    {{end}}
-    {{if or (eq .AdminRole "owner") (eq .AdminRole "")}}
-    {{template "nav-item" (dict "Href" "/settings/admins" "ActiveMenu" .ActiveMenu "Match" "admins" "Icon" "admin_panel_settings" "Label" "Admin")}}
-    {{end}}
+  <nav class="flex-1 overflow-y-auto scrollbar-thin px-2 py-2 space-y-1">
+    <details data-sidebar-section="main" {{if or (eq .ActiveMenu "routers") (eq .ActiveMenu "dashboard") (eq .ActiveMenu "active") (eq .ActiveMenu "report")}}data-active="true"{{end}} open>
+      {{template "nav-section-title" "Utama"}}<div class="space-y-0.5 pb-1">
+      {{template "nav-item" (dict "Href" "/routers" "ActiveMenu" .ActiveMenu "Match" "routers" "Icon" "router" "Label" "Sesi Router")}}
+      {{template "nav-item" (dict "Href" "/dashboard" "ActiveMenu" .ActiveMenu "Match" "dashboard" "Icon" "dashboard" "Label" "Dashboard")}}
+      {{template "nav-item" (dict "Href" "/hotspot/active" "ActiveMenu" .ActiveMenu "Match" "active" "Icon" "wifi" "Label" "Hotspot Aktif" "Dot" .Connected)}}
+      {{template "nav-item" (dict "Href" "/report" "ActiveMenu" .ActiveMenu "Match" "report" "Icon" "monitoring" "Label" "Laporan")}}
+      </div>
+    </details>
+    <details data-sidebar-section="hotspot" {{if or (eq .ActiveMenu "generate") (eq .ActiveMenu "users") (eq .ActiveMenu "profiles") (eq .ActiveMenu "hosts") (eq .ActiveMenu "ip-bindings") (eq .ActiveMenu "cookies") (eq .ActiveMenu "servers") (eq .ActiveMenu "server-profiles")}}data-active="true" open{{end}}>
+      {{template "nav-section-title" "Hotspot"}}<div class="space-y-0.5 pb-1">
+      {{template "nav-item" (dict "Href" "/hotspot/generate" "ActiveMenu" .ActiveMenu "Match" "generate" "Icon" "confirmation_number" "Label" "Generate")}}
+      {{template "nav-item" (dict "Href" "/hotspot/users" "ActiveMenu" .ActiveMenu "Match" "users" "Icon" "group" "Label" "User List")}}
+      {{template "nav-item" (dict "Href" "/hotspot/profiles" "ActiveMenu" .ActiveMenu "Match" "profiles" "Icon" "dns" "Label" "Profiles")}}
+      {{template "nav-item" (dict "Href" "/hotspot/hosts" "ActiveMenu" .ActiveMenu "Match" "hosts" "Icon" "devices" "Label" "Hosts")}}
+      {{template "nav-item" (dict "Href" "/hotspot/ip-bindings" "ActiveMenu" .ActiveMenu "Match" "ip-bindings" "Icon" "link" "Label" "IP Bindings")}}
+      {{template "nav-item" (dict "Href" "/hotspot/cookies" "ActiveMenu" .ActiveMenu "Match" "cookies" "Icon" "cookie" "Label" "Cookies")}}
+      {{template "nav-item" (dict "Href" "/hotspot/servers" "ActiveMenu" .ActiveMenu "Match" "servers" "Icon" "dns" "Label" "Servers")}}
+      {{template "nav-item" (dict "Href" "/hotspot/server-profiles" "ActiveMenu" .ActiveMenu "Match" "server-profiles" "Icon" "tune" "Label" "Server Profiles")}}
+      </div>
+    </details>
+    <details data-sidebar-section="pppoe" {{if or (eq .ActiveMenu "ppp-generate") (eq .ActiveMenu "ppp-secrets") (eq .ActiveMenu "ppp-active") (eq .ActiveMenu "ppp-profiles")}}data-active="true" open{{end}}>
+      {{template "nav-section-title" "PPPoE"}}<div class="space-y-0.5 pb-1">
+      {{template "nav-item" (dict "Href" "/ppp/generate" "ActiveMenu" .ActiveMenu "Match" "ppp-generate" "Icon" "person_add" "Label" "Generate Secret")}}
+      {{template "nav-item" (dict "Href" "/ppp/secrets" "ActiveMenu" .ActiveMenu "Match" "ppp-secrets" "Icon" "key" "Label" "PPP Secrets")}}
+      {{template "nav-item" (dict "Href" "/ppp/active" "ActiveMenu" .ActiveMenu "Match" "ppp-active" "Icon" "lan" "Label" "PPP Aktif" "Dot" .Connected)}}
+      {{template "nav-item" (dict "Href" "/ppp/profiles" "ActiveMenu" .ActiveMenu "Match" "ppp-profiles" "Icon" "tune" "Label" "PPP Profiles")}}
+      </div>
+    </details>
+    <details data-sidebar-section="system" {{if or (eq .ActiveMenu "template") (eq .ActiveMenu "settings") (eq .ActiveMenu "system-log") (eq .ActiveMenu "audit") (eq .ActiveMenu "admins")}}data-active="true" open{{end}}>
+      {{template "nav-section-title" "Sistem"}}<div class="space-y-0.5 pb-1">
+      {{template "nav-item" (dict "Href" "/template" "ActiveMenu" .ActiveMenu "Match" "template" "Icon" "web" "Label" "Template Hotspot")}}
+      {{template "nav-item" (dict "Href" "/settings" "ActiveMenu" .ActiveMenu "Match" "settings" "Icon" "settings" "Label" "Pengaturan")}}
+      {{if or (eq .AdminRole "owner") (eq .AdminRole "operator") (eq .AdminRole "")}}
+      {{if ne .AdminRole "viewer"}}{{template "nav-item" (dict "Href" "/system/log" "ActiveMenu" .ActiveMenu "Match" "system-log" "Icon" "terminal" "Label" "System Log")}}{{end}}
+      {{template "nav-item" (dict "Href" "/settings/audit" "ActiveMenu" .ActiveMenu "Match" "audit" "Icon" "history" "Label" "Audit Log")}}{{end}}
+      {{if or (eq .AdminRole "owner") (eq .AdminRole "")}}{{template "nav-item" (dict "Href" "/settings/admins" "ActiveMenu" .ActiveMenu "Match" "admins" "Icon" "admin_panel_settings" "Label" "Admin")}}{{end}}
+      </div>
+    </details>
   </nav>
 
   <!-- Footer -->
@@ -99,6 +105,12 @@
     <p class="px-3 pt-1 text-center text-[10px] text-muted-foreground">MikVoc v{{.AppVersion}} &middot; SantaiNetwork &copy; 2026</p>
   </div>
 </aside>
+{{end}}
+
+{{define "nav-section-title"}}
+<summary class="flex cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+  <span>{{.}}</span><span class="material-symbols-outlined sidebar-section-chevron text-[16px] transition-transform">expand_more</span>
+</summary>
 {{end}}
 
 {{define "nav-item"}}
