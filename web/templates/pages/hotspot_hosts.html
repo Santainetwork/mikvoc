@@ -1,0 +1,17 @@
+{{template "layout" .}}
+{{define "content"}}
+<div class="mb-6"><h1 class="text-2xl font-bold tracking-tight">Hotspot Hosts</h1><p class="text-sm text-muted-foreground">Host yang terdeteksi pada router aktif</p></div>
+{{with .Data}}
+<form method="GET" class="card card-content mb-5 grid grid-cols-1 gap-3 md:grid-cols-[12rem_1fr_auto]">
+  <select name="server" class="input"><option value="">Semua server</option>{{range .Servers}}<option value="{{.}}" {{if eq . $.Data.Server}}selected{{end}}>{{.}}</option>{{end}}</select>
+  <input name="q" value="{{.Search}}" class="input" placeholder="Cari MAC, alamat, atau server">
+  <button class="btn btn-primary btn-md">Filter</button>
+</form>
+{{if not .Available}}<div class="card card-content text-muted-foreground">Layanan manajemen router tidak tersedia.</div>{{else if .Error}}<div class="card card-content text-destructive">{{.Error}}</div>{{else}}
+<div class="card overflow-x-auto"><table class="table"><thead><tr><th>MAC Address</th><th>Address</th><th>To Address</th><th>Server</th><th>Uptime</th><th>Status</th><th>Binding</th></tr></thead><tbody>
+{{range .Hosts}}<tr><td class="font-mono text-xs">{{.MACAddress}}</td><td>{{.Address}}</td><td>{{.ToAddress}}</td><td>{{.Server}}</td><td>{{.Uptime}}</td><td>{{if .Authorized}}authorized{{else if .Bypassed}}bypassed{{else}}regular{{end}}</td><td>
+  {{if ne $.AdminRole "viewer"}}<form method="POST" action="/hotspot/hosts/make-binding" class="flex gap-2" data-loading><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="id" value="{{.ID}}"><select name="type" class="input h-8 text-xs"><option>regular</option><option>bypassed</option><option>blocked</option></select><button class="btn btn-primary btn-sm">Buat</button></form>{{else}}-{{end}}
+</td></tr>{{else}}<tr><td colspan="7"><div class="empty-state">Tidak ada host sesuai filter.</div></td></tr>{{end}}
+</tbody></table></div>{{end}}{{end}}
+{{end}}
+{{define "scripts"}}{{end}}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"mikvoc/internal/core"
 	"mikvoc/internal/middleware"
 )
 
@@ -55,6 +56,26 @@ func (a *App) RegisterRoutes(r *mux.Router) {
 	protected.HandleFunc("/hotspot/profiles/update", a.HandleProfileUpdate).Methods(http.MethodPost)
 	protected.HandleFunc("/hotspot/profiles/remove", a.HandleProfileRemove).Methods(http.MethodPost)
 	protected.HandleFunc("/hotspot/profiles/monitor", a.HandleSetMonitorProfile).Methods(http.MethodPost)
+	protected.HandleFunc("/hotspot/hosts", a.HandleHotspotHosts).Methods(http.MethodGet)
+	protected.HandleFunc("/hotspot/hosts/make-binding", a.HandleHostMakeBinding).Methods(http.MethodPost)
+	protected.HandleFunc("/hotspot/ip-bindings", a.HandleIPBindings).Methods(http.MethodGet)
+	protected.HandleFunc("/hotspot/ip-bindings/create", a.HandleIPBindingCreate).Methods(http.MethodPost)
+	protected.HandleFunc("/hotspot/ip-bindings/update", a.HandleIPBindingUpdate).Methods(http.MethodPost)
+	protected.HandleFunc("/hotspot/ip-bindings/remove", a.HandleIPBindingRemove).Methods(http.MethodPost)
+	protected.HandleFunc("/hotspot/cookies", a.HandleHotspotCookies).Methods(http.MethodGet)
+	protected.HandleFunc("/hotspot/cookies/remove", a.HandleCookieRemove).Methods(http.MethodPost)
+	protected.HandleFunc("/hotspot/servers", a.HandleHotspotServers).Methods(http.MethodGet)
+	protected.HandleFunc("/hotspot/servers/create", a.HandleHotspotServerCreate).Methods(http.MethodPost)
+	protected.HandleFunc("/hotspot/servers/update", a.HandleHotspotServerUpdate).Methods(http.MethodPost)
+	protected.HandleFunc("/hotspot/servers/remove", a.HandleHotspotServerRemove).Methods(http.MethodPost)
+	protected.HandleFunc("/hotspot/server-profiles", a.HandleHotspotServerProfiles).Methods(http.MethodGet)
+	protected.HandleFunc("/hotspot/server-profiles/create", a.HandleHotspotServerProfileCreate).Methods(http.MethodPost)
+	protected.HandleFunc("/hotspot/server-profiles/update", a.HandleHotspotServerProfileUpdate).Methods(http.MethodPost)
+	protected.HandleFunc("/hotspot/server-profiles/remove", a.HandleHotspotServerProfileRemove).Methods(http.MethodPost)
+
+	operatorOnly := protected.PathPrefix("/system").Subrouter()
+	operatorOnly.Use(middleware.RequireRole(core.RoleOperator))
+	operatorOnly.HandleFunc("/log", a.HandleSystemLog).Methods(http.MethodGet)
 
 	protected.HandleFunc("/report", a.HandleReport).Methods(http.MethodGet)
 	protected.HandleFunc("/report/purge-scripts", a.HandleSalesPurge).Methods(http.MethodPost)

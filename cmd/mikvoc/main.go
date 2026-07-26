@@ -71,12 +71,14 @@ func main() {
 	statsSvc := service.NewStats(pool)
 	templateSvc := service.NewTemplate(pool)
 	pppSvc := service.NewPPP(pool)
+	routerManagementSvc := service.NewRouterManagement(pool)
 
 	app := httpapi.NewApp(store, pool, authSvc, routerSvc, userSvc, profileSvc, genSvc)
 	app.Sales = salesSvc
 	app.Stats = statsSvc
 	app.Template = templateSvc
 	app.PPP = pppSvc
+	app.RouterManagement = routerManagementSvc
 	app.SetDBPath(*dbPath)
 	app.SetSecret(appSecret)
 

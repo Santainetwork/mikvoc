@@ -11,6 +11,8 @@ Developed by **SantaiNetwork**.
 
 - Multi-router dengan sesi router aktif per browser.
 - Manajemen user, profile, active session, dan voucher Hotspot.
+- Hotspot Hosts, IP Bindings, Cookies, Servers, dan Server Profiles bergaya Mikhmon.
+- System Log RouterOS dengan filter topic dan pencarian untuk operator/owner.
 - Manajemen secret, profile, dan active session PPPoE.
 - Generate voucher batch dengan harga jual dan masa aktif profile.
 - Empat layout cetak voucher: Classic, Thermal, Grid Sheet, dan Compact.

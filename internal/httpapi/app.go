@@ -61,19 +61,20 @@ type App struct {
 	routersCache []database.Router
 	routersAt    time.Time
 
-	Pool     *service.Pool
-	Auth     *service.AuthService
-	Routers  *service.RouterService
-	Users    *service.UserService
-	Profiles *service.ProfileService
-	Generate *service.GenerateService
-	Sales    *service.SalesService
-	Stats    *service.StatsService
-	Template *service.TemplateService
-	PPP      *service.PPPService
-	Store    *repository.Store
-	DBPath   string
-	Secret   string
+	Pool             *service.Pool
+	Auth             *service.AuthService
+	Routers          *service.RouterService
+	Users            *service.UserService
+	Profiles         *service.ProfileService
+	Generate         *service.GenerateService
+	Sales            *service.SalesService
+	Stats            *service.StatsService
+	Template         *service.TemplateService
+	PPP              *service.PPPService
+	RouterManagement *service.RouterManagementService
+	Store            *repository.Store
+	DBPath           string
+	Secret           string
 
 	keepAliveStop chan struct{}
 	keepAliveOnce sync.Once

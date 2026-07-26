@@ -1,0 +1,7 @@
+{{template "layout" .}}
+{{define "content"}}
+<div class="mb-6"><h1 class="text-2xl font-bold tracking-tight">System Log</h1><p class="text-sm text-muted-foreground">Log RouterOS, maksimum 200 entri</p></div>
+{{with .Data}}<form method="GET" class="card card-content mb-5 grid grid-cols-1 gap-3 md:grid-cols-[12rem_1fr_8rem_auto]"><input name="topic" value="{{.Topic}}" class="input" placeholder="Topic"><input name="q" value="{{.Search}}" class="input" placeholder="Cari pesan"><select name="limit" class="input"><option value="50" {{if eq .Limit 50}}selected{{end}}>50</option><option value="100" {{if eq .Limit 100}}selected{{end}}>100</option><option value="200" {{if eq .Limit 200}}selected{{end}}>200</option></select><button class="btn btn-primary btn-md">Filter</button></form>
+{{if not .Available}}<div class="card card-content text-muted-foreground">Layanan manajemen router tidak tersedia.</div>{{else if .Error}}<div class="card card-content text-destructive">{{.Error}}</div>{{else}}<div class="card overflow-x-auto"><table class="table"><thead><tr><th>Waktu</th><th>Topics</th><th>Pesan</th></tr></thead><tbody>{{range .Logs}}<tr><td class="whitespace-nowrap">{{.Time}}</td><td><code>{{.Topics}}</code></td><td class="min-w-80 break-words">{{.Message}}</td></tr>{{else}}<tr><td colspan="3"><div class="empty-state">Tidak ada log.</div></td></tr>{{end}}</tbody></table></div>{{end}}{{end}}
+{{end}}
+{{define "scripts"}}{{end}}

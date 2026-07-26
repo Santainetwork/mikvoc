@@ -59,6 +59,11 @@
     {{template "nav-item" (dict "Href" "/hotspot/generate" "ActiveMenu" .ActiveMenu "Match" "generate" "Icon" "confirmation_number" "Label" "Generate")}}
     {{template "nav-item" (dict "Href" "/hotspot/users" "ActiveMenu" .ActiveMenu "Match" "users" "Icon" "group" "Label" "User List")}}
     {{template "nav-item" (dict "Href" "/hotspot/profiles" "ActiveMenu" .ActiveMenu "Match" "profiles" "Icon" "dns" "Label" "Profiles")}}
+    {{template "nav-item" (dict "Href" "/hotspot/hosts" "ActiveMenu" .ActiveMenu "Match" "hosts" "Icon" "devices" "Label" "Hosts")}}
+    {{template "nav-item" (dict "Href" "/hotspot/ip-bindings" "ActiveMenu" .ActiveMenu "Match" "ip-bindings" "Icon" "link" "Label" "IP Bindings")}}
+    {{template "nav-item" (dict "Href" "/hotspot/cookies" "ActiveMenu" .ActiveMenu "Match" "cookies" "Icon" "cookie" "Label" "Cookies")}}
+    {{template "nav-item" (dict "Href" "/hotspot/servers" "ActiveMenu" .ActiveMenu "Match" "servers" "Icon" "dns" "Label" "Servers")}}
+    {{template "nav-item" (dict "Href" "/hotspot/server-profiles" "ActiveMenu" .ActiveMenu "Match" "server-profiles" "Icon" "tune" "Label" "Server Profiles")}}
 
     <p class="px-3 mt-4 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">PPPoE</p>
     {{template "nav-item" (dict "Href" "/ppp/generate" "ActiveMenu" .ActiveMenu "Match" "ppp-generate" "Icon" "person_add" "Label" "Generate Secret")}}
@@ -70,6 +75,7 @@
     {{template "nav-item" (dict "Href" "/template" "ActiveMenu" .ActiveMenu "Match" "template" "Icon" "web" "Label" "Template Hotspot")}}
     {{template "nav-item" (dict "Href" "/settings" "ActiveMenu" .ActiveMenu "Match" "settings" "Icon" "settings" "Label" "Pengaturan")}}
     {{if or (eq .AdminRole "owner") (eq .AdminRole "operator") (eq .AdminRole "")}}
+    {{if ne .AdminRole "viewer"}}{{template "nav-item" (dict "Href" "/system/log" "ActiveMenu" .ActiveMenu "Match" "system-log" "Icon" "terminal" "Label" "System Log")}}{{end}}
     {{template "nav-item" (dict "Href" "/settings/audit" "ActiveMenu" .ActiveMenu "Match" "audit" "Icon" "history" "Label" "Audit Log")}}
     {{end}}
     {{if or (eq .AdminRole "owner") (eq .AdminRole "")}}

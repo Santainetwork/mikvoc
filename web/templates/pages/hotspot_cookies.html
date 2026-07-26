@@ -1,0 +1,9 @@
+{{template "layout" .}}
+{{define "content"}}
+<div class="mb-6"><h1 class="text-2xl font-bold tracking-tight">Hotspot Cookies</h1><p class="text-sm text-muted-foreground">Sesi cookie pengguna hotspot</p></div>
+{{with .Data}}<form method="GET" class="card card-content mb-5 flex gap-3"><input name="q" value="{{.Search}}" class="input" placeholder="Cari user atau MAC address"><button class="btn btn-primary btn-md">Cari</button></form>
+{{if not .Available}}<div class="card card-content text-muted-foreground">Layanan manajemen router tidak tersedia.</div>{{else if .Error}}<div class="card card-content text-destructive">{{.Error}}</div>{{else}}<div class="card overflow-x-auto"><table class="table"><thead><tr><th>User</th><th>MAC Address</th><th>Expires In</th><th class="text-right">Aksi</th></tr></thead><tbody>
+{{range .Cookies}}<tr><td class="font-semibold">{{.User}}</td><td class="font-mono text-xs">{{.MACAddress}}</td><td>{{.ExpiresIn}}</td><td>{{if ne $.AdminRole "viewer"}}<form method="POST" action="/hotspot/cookies/remove" class="flex justify-end" data-loading><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="id" value="{{.ID}}"><button class="btn btn-ghost btn-sm hover:text-destructive" data-confirm="Hapus cookie pengguna ini?">Hapus</button></form>{{else}}-{{end}}</td></tr>{{else}}<tr><td colspan="4"><div class="empty-state">Tidak ada cookie.</div></td></tr>{{end}}
+</tbody></table></div>{{end}}{{end}}
+{{end}}
+{{define "scripts"}}{{end}}
