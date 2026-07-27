@@ -16,6 +16,7 @@ type SettingRepo interface {
 	GetRouterSetting(routerID int, key string) string
 	SetRouterSetting(routerID int, key, value string) error
 	GetRouterSettings(routerID int) map[string]string
+	SetTemplateSettings(routerID int, updates map[string]string) error
 	GetRouterVoucherTemplate(routerID int) string
 	SetRouterVoucherTemplate(routerID int, tmplID string) error
 }

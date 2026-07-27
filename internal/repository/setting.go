@@ -26,6 +26,10 @@ func (s *Store) GetRouterSettings(routerID int) map[string]string {
 	return database.GetRouterSettings(routerID)
 }
 
+func (s *Store) SetTemplateSettings(routerID int, updates map[string]string) error {
+	return database.SetTemplateSettings(routerID, updates)
+}
+
 func (s *Store) GetRouterVoucherTemplate(routerID int) string {
 	return database.GetRouterVoucherTemplate(routerID)
 }

@@ -69,7 +69,7 @@ func main() {
 	genSvc := service.NewGenerate(pool, store)
 	salesSvc := service.NewSales(pool, store)
 	statsSvc := service.NewStats(pool)
-	templateSvc := service.NewTemplate(pool)
+	templateSvc := service.NewTemplate(pool, store)
 	pppSvc := service.NewPPP(pool)
 	routerManagementSvc := service.NewRouterManagement(pool)
 
