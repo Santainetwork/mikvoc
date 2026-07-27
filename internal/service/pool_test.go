@@ -4,7 +4,34 @@ import (
 	"testing"
 
 	"mikvoc/internal/core"
+	"mikvoc/internal/routeros"
 )
+
+func TestPoolConnectedCount(t *testing.T) {
+	p := NewPool()
+	p.clients[1] = routeros.NewClient("127.0.0.1", "8728")
+
+	if got := p.ConnectedCount(); got != 0 {
+		t.Fatalf("ConnectedCount() = %d, want 0", got)
+	}
+}
+
+func TestPoolRejectsStaleConnectionAfterClear(t *testing.T) {
+	p := NewPool()
+	p.mu.Lock()
+	p.revisions[1] = 1
+	epoch := p.epoch
+	p.mu.Unlock()
+
+	p.Clear()
+	stale := routeros.NewClient("127.0.0.1", "8728")
+	if p.installClient(1, 1, epoch, stale) {
+		t.Fatal("stale connection installed after Clear")
+	}
+	if p.Client(1) != nil {
+		t.Fatal("stale client retained")
+	}
+}
 
 func TestPool_RequireClient_NotConnected(t *testing.T) {
 	p := NewPool()

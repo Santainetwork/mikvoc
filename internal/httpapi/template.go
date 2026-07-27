@@ -208,7 +208,7 @@ func (a *App) HandleTemplateEditor(w http.ResponseWriter, r *http.Request) {
 					a.setFlash(w, r, fmt.Sprintf("Template berhasil diupload ke Mikrotik (%s).", hotspotDir))
 				}
 			} else {
-				cl := a.clientFor(r)
+				cl := a.Pool.Client(sessionRouterID(r))
 				if cl == nil || !cl.IsConnected() {
 					a.setFlash(w, r, "Gagal upload: Router tidak terhubung.")
 				} else {

@@ -20,17 +20,14 @@ type healthResponse struct {
 }
 
 func (a *App) routerCounts() (connected, total int) {
-	routers, err := database.GetRouters()
-	if err == nil {
-		total = len(routers)
-	}
-	a.mu.RLock()
-	for _, cl := range a.clients {
-		if cl != nil && cl.IsConnected() {
-			connected++
+	if a.Routers != nil {
+		if routers, err := a.Routers.List(); err == nil {
+			total = len(routers)
 		}
 	}
-	a.mu.RUnlock()
+	if a.Pool != nil {
+		connected = a.Pool.ConnectedCount()
+	}
 	return connected, total
 }
 

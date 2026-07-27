@@ -9,6 +9,8 @@ import (
 
 	"mikvoc/internal/database"
 	"mikvoc/internal/middleware"
+	"mikvoc/internal/repository"
+	"mikvoc/internal/service"
 )
 
 // TestRenderPages ensures every page template compiles and renders without error
@@ -31,7 +33,11 @@ func TestRenderPages(t *testing.T) {
 	// Init session store with test secret
 	middleware.InitSession("test-secret-for-render-test")
 
-	app := NewApp(nil, nil, nil, nil, nil, nil, nil)
+	store := repository.NewStore()
+	pool := service.NewPool()
+	app := NewApp(store, pool, service.NewAuth(store), service.NewRouter(store, pool), service.NewUser(pool), service.NewProfile(pool), service.NewGenerate(pool, store))
+	app.Stats = service.NewStats(pool)
+	app.Sales = service.NewSales(pool, store)
 	if err := app.LoadTemplates(); err != nil {
 		t.Fatalf("load templates: %v", err)
 	}

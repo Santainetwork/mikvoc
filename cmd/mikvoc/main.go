@@ -88,8 +88,10 @@ func main() {
 	}
 
 	// Connect to all saved routers at startup
-	app.ConnectAll()
-	app.StartKeepAlive(30 * time.Second)
+	if err := routerSvc.ConnectAll(); err != nil {
+		log.Printf("[warn] connect routers: %v", err)
+	}
+	pool.StartKeepAlive(30 * time.Second)
 
 	sched := service.NewScheduler(pool, store)
 	sched.Start()

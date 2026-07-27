@@ -10,9 +10,11 @@ import (
 )
 
 type Pool struct {
-	mu      sync.RWMutex
-	clients map[int]*routeros.Client
-	users   *userCache
+	mu        sync.RWMutex
+	clients   map[int]*routeros.Client
+	revisions map[int]uint64
+	epoch     uint64
+	users     *userCache
 
 	keepAliveStop chan struct{}
 	keepAliveOnce sync.Once
@@ -20,8 +22,9 @@ type Pool struct {
 
 func NewPool() *Pool {
 	return &Pool{
-		clients: make(map[int]*routeros.Client),
-		users:   newUserCache(),
+		clients:   make(map[int]*routeros.Client),
+		revisions: make(map[int]uint64),
+		users:     newUserCache(),
 	}
 }
 
@@ -32,10 +35,9 @@ func (p *Pool) Connect(rt *core.Router) error {
 	}
 
 	p.mu.Lock()
-	if existing, ok := p.clients[rt.ID]; ok && existing != nil {
-		existing.Close()
-		delete(p.clients, rt.ID)
-	}
+	p.revisions[rt.ID]++
+	revision := p.revisions[rt.ID]
+	epoch := p.epoch
 	p.mu.Unlock()
 
 	cl := routeros.NewClient(rt.IP, port)
@@ -43,10 +45,23 @@ func (p *Pool) Connect(rt *core.Router) error {
 		return err
 	}
 
-	p.mu.Lock()
-	p.clients[rt.ID] = cl
-	p.mu.Unlock()
+	if !p.installClient(rt.ID, revision, epoch, cl) {
+		cl.Close()
+	}
 	return nil
+}
+
+func (p *Pool) installClient(id int, revision, epoch uint64, cl *routeros.Client) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.epoch != epoch || p.revisions[id] != revision {
+		return false
+	}
+	if existing := p.clients[id]; existing != nil && existing != cl {
+		existing.Close()
+	}
+	p.clients[id] = cl
+	return true
 }
 
 func (p *Pool) Disconnect(id int) {
@@ -55,6 +70,7 @@ func (p *Pool) Disconnect(id int) {
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	p.revisions[id]++
 	if cl, ok := p.clients[id]; ok && cl != nil {
 		cl.Close()
 		delete(p.clients, id)
@@ -65,6 +81,9 @@ func (p *Pool) Disconnect(id int) {
 }
 
 func (p *Pool) Client(id int) *routeros.Client {
+	if p == nil {
+		return nil
+	}
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.clients[id]
@@ -73,6 +92,18 @@ func (p *Pool) Client(id int) *routeros.Client {
 func (p *Pool) IsConnected(id int) bool {
 	cl := p.Client(id)
 	return cl != nil && cl.IsConnected()
+}
+
+func (p *Pool) ConnectedCount() int {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	count := 0
+	for _, cl := range p.clients {
+		if cl != nil && cl.IsConnected() {
+			count++
+		}
+	}
+	return count
 }
 
 func (p *Pool) ConnectAll(routers []core.Router) {
@@ -98,28 +129,10 @@ func (p *Pool) RequireClient(id int) (*routeros.Client, error) {
 	return cl, nil
 }
 
-func (p *Pool) Put(id int, cl *routeros.Client) {
-	if id == 0 {
-		return
-	}
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if cl == nil {
-		delete(p.clients, id)
-		if p.users != nil {
-			p.users.invalidate(id)
-		}
-		return
-	}
-	if existing, ok := p.clients[id]; ok && existing != nil && existing != cl {
-		existing.Close()
-	}
-	p.clients[id] = cl
-}
-
 func (p *Pool) Clear() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	p.epoch++
 	for id, cl := range p.clients {
 		if cl != nil {
 			cl.Close()

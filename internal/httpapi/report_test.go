@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"mikvoc/internal/database"
+	"mikvoc/internal/core"
 )
 
 func TestResolveReportFiltersSupportsMikhmonPresets(t *testing.T) {
@@ -41,7 +41,7 @@ func TestResolveReportFiltersSupportsMikhmonPresets(t *testing.T) {
 }
 
 func TestBuildReportViewDataFiltersByProfileAndBuildsSummary(t *testing.T) {
-	sales := []database.SaleRecord{
+	sales := []core.Sale{
 		{Username: "A1", Profile: "1d", Comment: "batch-a", Price: 2000, CreatedAt: "2026-05-04 09:00:00"},
 		{Username: "A2", Profile: "1d", Comment: "batch-a", Price: 2000, CreatedAt: "2026-05-03 10:00:00"},
 		{Username: "B1", Profile: "7d", Comment: "batch-b", Price: 10000, CreatedAt: "2026-05-04 11:00:00"},

@@ -1,7 +1,7 @@
 package httpapi
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -13,6 +13,22 @@ type routerHealthSummary struct {
 	Tone   string
 	Icon   string
 	Detail string
+}
+
+type dashboardResponse struct {
+	Connected    bool   `json:"connected"`
+	Active       int    `json:"active"`
+	Users        int    `json:"users"`
+	CPU          string `json:"cpu,omitempty"`
+	Uptime       string `json:"uptime,omitempty"`
+	Board        string `json:"board,omitempty"`
+	Version      string `json:"version,omitempty"`
+	FreeMemory   string `json:"free_mem,omitempty"`
+	MemoryPct    int    `json:"mem_pct"`
+	HealthLabel  string `json:"health_label,omitempty"`
+	HealthTone   string `json:"health_tone,omitempty"`
+	HealthIcon   string `json:"health_icon,omitempty"`
+	HealthDetail string `json:"health_detail,omitempty"`
 }
 
 func dashboardHealthSummary(connected bool, cpuLoad, memUsedPct int) routerHealthSummary {
@@ -29,6 +45,10 @@ func dashboardHealthSummary(connected bool, cpuLoad, memUsedPct int) routerHealt
 }
 
 func (a *App) HandleDashboard(w http.ResponseWriter, r *http.Request) {
+	if a.Stats == nil {
+		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+		return
+	}
 	type DashData struct {
 		Resource    interface{}
 		ActiveCount int
@@ -59,50 +79,24 @@ func (a *App) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	connected := false
 	routerID := sessionRouterID(r)
 
-	if a.Stats != nil {
-		sum, _ := a.Stats.Summary(routerID)
-		connected = sum.Connected
-		if connected {
-			if sum.Resource != nil {
-				d.Resource = sum.Resource
-				total := mustParseI64(sum.Resource.TotalMemory)
-				free := mustParseI64(sum.Resource.FreeMemory)
-				if total > 0 {
-					d.MemUsedPct = int((total - free) * 100 / total)
-				}
-			}
-			d.ActiveCount = sum.ActiveCount
-			d.UserCount = sum.UserCount
-			if sum.Servers != nil {
-				d.Servers = sum.Servers
-			}
-			if sum.Interfaces != nil {
-				d.Interfaces = sum.Interfaces
+	sum, _ := a.Stats.Summary(routerID)
+	connected = sum.Connected
+	if connected {
+		if sum.Resource != nil {
+			d.Resource = sum.Resource
+			total := mustParseI64(sum.Resource.TotalMemory)
+			free := mustParseI64(sum.Resource.FreeMemory)
+			if total > 0 {
+				d.MemUsedPct = int((total - free) * 100 / total)
 			}
 		}
-	} else {
-		cl := a.clientFor(r)
-		connected = cl != nil && cl.IsConnected()
-		if connected {
-			res, _ := cl.GetSystemResource()
-			if res != nil {
-				d.Resource = res
-				total := mustParseI64(res.TotalMemory)
-				free := mustParseI64(res.FreeMemory)
-				if total > 0 {
-					d.MemUsedPct = int((total - free) * 100 / total)
-				}
-			}
-			d.ActiveCount = cl.CountActiveUsers()
-			d.UserCount = cl.CountUsers()
-			servers, _ := cl.GetServers()
-			if servers != nil {
-				d.Servers = servers
-			}
-			interfaces, _ := cl.GetInterfaces()
-			if interfaces != nil {
-				d.Interfaces = interfaces
-			}
+		d.ActiveCount = sum.ActiveCount
+		d.UserCount = sum.UserCount
+		if sum.Servers != nil {
+			d.Servers = sum.Servers
+		}
+		if sum.Interfaces != nil {
+			d.Interfaces = sum.Interfaces
 		}
 	}
 	d.Health = dashboardHealthSummary(connected, mustParseInt(d.Resource.(*routeros.SystemResource).CPULoad), d.MemUsedPct)
@@ -115,45 +109,31 @@ func (a *App) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) HandleTrafficAPI(w http.ResponseWriter, r *http.Request) {
+	if a.Stats == nil {
+		http.Error(w, `{"error":"service unavailable"}`, http.StatusServiceUnavailable)
+		return
+	}
 	iface := r.URL.Query().Get("interface")
 	if iface == "" {
 		iface = "ether1"
 	}
 	routerID := sessionRouterID(r)
 
-	if a.Stats != nil {
-		tr, err := a.Stats.Traffic(routerID, iface)
-		if err != nil {
-			http.Error(w, `{"error":"not connected"}`, http.StatusServiceUnavailable)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"rx":` + strconv.FormatInt(tr.RX, 10) + `,"tx":` + strconv.FormatInt(tr.TX, 10) + `}`))
-		return
-	}
-
-	cl := a.clientFor(r)
-	if cl == nil || !cl.IsConnected() {
+	tr, err := a.Stats.Traffic(routerID, iface)
+	if err != nil {
 		http.Error(w, `{"error":"not connected"}`, http.StatusServiceUnavailable)
 		return
 	}
-	rows, err := cl.Run("/interface/monitor-traffic", map[string]string{
-		"interface": iface,
-		"once":      "",
-	})
-	if err != nil || len(rows) == 0 {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"rx":0,"tx":0}`))
-		return
-	}
-	rx, _ := strconv.ParseInt(rows[0]["rx-bits-per-second"], 10, 64)
-	tx, _ := strconv.ParseInt(rows[0]["tx-bits-per-second"], 10, 64)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"rx":` + strconv.FormatInt(rx, 10) + `,"tx":` + strconv.FormatInt(tx, 10) + `}`))
+	_ = json.NewEncoder(w).Encode(map[string]int64{"rx": tr.RX, "tx": tr.TX})
 }
 
 func (a *App) HandleDashboardAPI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	if a.Stats == nil {
+		http.Error(w, `{"error":"service unavailable"}`, http.StatusServiceUnavailable)
+		return
+	}
 	routerID := sessionRouterID(r)
 
 	var (
@@ -168,41 +148,23 @@ func (a *App) HandleDashboardAPI(w http.ResponseWriter, r *http.Request) {
 		totalMem    string
 	)
 
-	if a.Stats != nil {
-		sum, _ := a.Stats.Summary(routerID)
-		connected = sum.Connected
-		if connected {
-			activeCount = sum.ActiveCount
-			userCount = sum.UserCount
-			if sum.Resource != nil {
-				cpu = sum.Resource.CPULoad
-				uptime = sum.Resource.Uptime
-				board = sum.Resource.BoardName
-				version = sum.Resource.Version
-				freeMem = sum.Resource.FreeMemory
-				totalMem = sum.Resource.TotalMemory
-			}
-		}
-	} else {
-		cl := a.clientFor(r)
-		if cl != nil && cl.IsConnected() {
-			connected = true
-			res, _ := cl.GetSystemResource()
-			activeCount = cl.CountActiveUsers()
-			userCount = cl.CountUsers()
-			if res != nil {
-				cpu = res.CPULoad
-				uptime = res.Uptime
-				board = res.BoardName
-				version = res.Version
-				freeMem = res.FreeMemory
-				totalMem = res.TotalMemory
-			}
+	sum, _ := a.Stats.Summary(routerID)
+	connected = sum.Connected
+	if connected {
+		activeCount = sum.ActiveCount
+		userCount = sum.UserCount
+		if sum.Resource != nil {
+			cpu = sum.Resource.CPULoad
+			uptime = sum.Resource.Uptime
+			board = sum.Resource.BoardName
+			version = sum.Resource.Version
+			freeMem = sum.Resource.FreeMemory
+			totalMem = sum.Resource.TotalMemory
 		}
 	}
 
 	if !connected {
-		w.Write([]byte(`{"connected":false}`))
+		_ = json.NewEncoder(w).Encode(dashboardResponse{Connected: false})
 		return
 	}
 
@@ -218,10 +180,11 @@ func (a *App) HandleDashboardAPI(w http.ResponseWriter, r *http.Request) {
 	freeMemFmt := routeros.FormatBytes(mustParseI64(freeMem))
 	health := dashboardHealthSummary(true, mustParseInt(cpu), memUsedPct)
 
-	w.Write([]byte(fmt.Sprintf(
-		`{"connected":true,"active":%d,"users":%d,"cpu":"%s","uptime":"%s","board":"%s","version":"%s","free_mem":"%s","mem_pct":%d,"health_label":"%s","health_tone":"%s","health_icon":"%s","health_detail":"%s"}`,
-		activeCount, userCount, cpu, uptime, board, version, freeMemFmt, memUsedPct, health.Label, health.Tone, health.Icon, health.Detail,
-	)))
+	_ = json.NewEncoder(w).Encode(dashboardResponse{
+		Connected: true, Active: activeCount, Users: userCount, CPU: cpu, Uptime: uptime,
+		Board: board, Version: version, FreeMemory: freeMemFmt, MemoryPct: memUsedPct,
+		HealthLabel: health.Label, HealthTone: health.Tone, HealthIcon: health.Icon, HealthDetail: health.Detail,
+	})
 }
 
 func mustParseInt(s string) int {

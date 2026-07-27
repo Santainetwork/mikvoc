@@ -468,7 +468,7 @@ func parseUsersJSONPagination(r *http.Request) (limit, offset int) {
 }
 
 func (a *App) HandleUsersJSON(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if a.Users == nil && (cl == nil || !cl.IsConnected()) {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
@@ -512,7 +512,7 @@ func (a *App) HandleUsersJSON(w http.ResponseWriter, r *http.Request) {
 
 // HandleUsers renders the user list.
 func (a *App) HandleUsers(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	filters := userListFiltersFromRequest(r)
 	printDefaultURL, printQRURL, printCompactURL := userListPrintURLs(filters)
 
@@ -577,7 +577,7 @@ func (a *App) HandleUsers(w http.ResponseWriter, r *http.Request) {
 // Mikhmon-compatible: filter by comment batch prints unused vouchers (uptime=0) only,
 // unless ids= is set (selected users) or all=1 is forced.
 func (a *App) HandlePrint(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if a.Users == nil && (cl == nil || !cl.IsConnected()) {
 		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 		return
@@ -636,7 +636,7 @@ func (a *App) HandlePrint(w http.ResponseWriter, r *http.Request) {
 
 // HandleUserRemove deletes a user by ID (POST).
 func (a *App) HandleUserRemove(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/hotspot/users", http.StatusSeeOther)
 		return
@@ -697,7 +697,7 @@ func (a *App) HandleUserRemove(w http.ResponseWriter, r *http.Request) {
 
 // HandleUserDisable enables or disables a user (POST).
 func (a *App) HandleUserDisable(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/hotspot/users", http.StatusSeeOther)
 		return
@@ -730,7 +730,7 @@ func (a *App) HandleUserDisable(w http.ResponseWriter, r *http.Request) {
 
 // HandleUserReset resets a user's counters (POST).
 func (a *App) HandleUserReset(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/hotspot/users", http.StatusSeeOther)
 		return
@@ -806,7 +806,7 @@ func (a *App) HandleUserGet(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if cl == nil || !cl.IsConnected() {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
@@ -837,7 +837,7 @@ func (a *App) HandleUserGet(w http.ResponseWriter, r *http.Request) {
 
 // HandleUserEdit updates a hotspot user (POST, JSON response).
 func (a *App) HandleUserEdit(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/hotspot/users", http.StatusSeeOther)
 		return
@@ -891,7 +891,7 @@ func (a *App) HandleUserEdit(w http.ResponseWriter, r *http.Request) {
 
 // HandleUserBulkDisable enables/disables multiple users at once (POST, JSON).
 func (a *App) HandleUserBulkDisable(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/hotspot/users", http.StatusSeeOther)
 		return
@@ -947,7 +947,7 @@ func (a *App) HandleUserBulkDisable(w http.ResponseWriter, r *http.Request) {
 
 // HandleUserBulkProfile moves multiple users to a new profile (POST, JSON).
 func (a *App) HandleUserBulkProfile(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/hotspot/users", http.StatusSeeOther)
 		return
@@ -1003,7 +1003,7 @@ func (a *App) HandleUserBulkProfile(w http.ResponseWriter, r *http.Request) {
 
 // HandleRemoveExpired removes all expired users (POST).
 func (a *App) HandleRemoveExpired(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/hotspot/users", http.StatusSeeOther)
 		return
@@ -1031,7 +1031,7 @@ func (a *App) HandleRemoveExpired(w http.ResponseWriter, r *http.Request) {
 
 // HandleRemoveComment removes users by their comment (POST).
 func (a *App) HandleRemoveComment(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/hotspot/users", http.StatusSeeOther)
 		return
@@ -1130,7 +1130,7 @@ func (a *App) HandleRemoveComment(w http.ResponseWriter, r *http.Request) {
 // HandleGenerate renders the voucher generation form (GET) and generates (POST).
 // After success, Mikhmon-style: redirect to print page filtered by batch comment.
 func (a *App) HandleGenerate(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	type GenData struct {
 		Profiles      []routeros.HotspotUserProfile
 		Servers       []map[string]string
@@ -1213,7 +1213,7 @@ func (a *App) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 
 // HandleActiveUsers renders the active hotspot sessions page.
 func (a *App) HandleActiveUsers(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	server := r.URL.Query().Get("server")
 	type ActiveData struct {
 		Active  []routeros.HotspotActive
@@ -1249,7 +1249,7 @@ func (a *App) HandleActiveUsers(w http.ResponseWriter, r *http.Request) {
 
 // HandleKickUser kicks an active session (POST).
 func (a *App) HandleKickUser(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/hotspot/active", http.StatusSeeOther)
 		return
@@ -1275,7 +1275,7 @@ func (a *App) HandleKickUser(w http.ResponseWriter, r *http.Request) {
 
 // HandleProfiles renders the hotspot profiles list.
 func (a *App) HandleProfiles(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	type ProfilesData struct {
 		Profiles []routeros.HotspotUserProfile
 		Pools    []string
@@ -1313,7 +1313,7 @@ func (a *App) HandleProfileRemove(w http.ResponseWriter, r *http.Request) {
 	if a.Profiles != nil {
 		err = a.Profiles.Remove(sessionRouterID(r), id)
 	} else {
-		cl := a.clientFor(r)
+		cl := a.Pool.Client(sessionRouterID(r))
 		if cl == nil || !cl.IsConnected() {
 			a.setFlash(w, r, "Error: Tidak terhubung ke router.")
 			http.Redirect(w, r, "/hotspot/profiles", http.StatusSeeOther)
@@ -1372,7 +1372,7 @@ func (a *App) HandleProfileCreate(w http.ResponseWriter, r *http.Request) {
 	if a.Profiles != nil {
 		err = a.Profiles.Create(sessionRouterID(r), name, shared, rate, addressPool, parentQueue, expiredMode, validity, lockMac, price, sprice, gracePeriod)
 	} else {
-		cl := a.clientFor(r)
+		cl := a.Pool.Client(sessionRouterID(r))
 		if cl == nil || !cl.IsConnected() {
 			a.setFlash(w, r, "Error: Tidak terhubung ke router.")
 			http.Redirect(w, r, "/hotspot/profiles", http.StatusSeeOther)
@@ -1432,7 +1432,7 @@ func (a *App) HandleProfileUpdate(w http.ResponseWriter, r *http.Request) {
 	if a.Profiles != nil {
 		err = a.Profiles.Update(sessionRouterID(r), id, name, shared, rate, addressPool, parentQueue, expiredMode, validity, lockMac, price, sprice, gracePeriod)
 	} else {
-		cl := a.clientFor(r)
+		cl := a.Pool.Client(sessionRouterID(r))
 		if cl == nil || !cl.IsConnected() {
 			a.setFlash(w, r, "Error: Tidak terhubung ke router.")
 			http.Redirect(w, r, "/hotspot/profiles", http.StatusSeeOther)
@@ -1452,7 +1452,7 @@ func (a *App) HandleProfileUpdate(w http.ResponseWriter, r *http.Request) {
 
 // HandleExportCSV exports all hotspot users (with optional filter) as a CSV file download.
 func (a *App) HandleExportCSV(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if a.Users == nil && (cl == nil || !cl.IsConnected()) {
 		http.Error(w, "Tidak terhubung ke router", http.StatusServiceUnavailable)
 		return
@@ -1503,7 +1503,7 @@ func (a *App) HandleExportCSV(w http.ResponseWriter, r *http.Request) {
 // HandleImportCSV imports users from a CSV file (POST multipart, JSON response).
 // Expected columns: username, password, profile (others optional: server, comment, limit_uptime, limit_bytes, mac_address).
 func (a *App) HandleImportCSV(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/hotspot/users", http.StatusSeeOther)
 		return
@@ -1603,7 +1603,7 @@ func (a *App) HandleImportCSV(w http.ResponseWriter, r *http.Request) {
 
 // HandleExportScript exports users as a RouterOS import script, like Mikhmon's script export.
 func (a *App) HandleExportScript(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if a.Users == nil && (cl == nil || !cl.IsConnected()) {
 		http.Error(w, "Tidak terhubung ke router", http.StatusServiceUnavailable)
 		return
@@ -1654,7 +1654,7 @@ func (a *App) HandleExportScript(w http.ResponseWriter, r *http.Request) {
 // HandleQuickPrint renders a printable single-voucher slip for one user (GET).
 // Uses the voucher_template setting to choose the print style.
 func (a *App) HandleQuickPrint(w http.ResponseWriter, r *http.Request) {
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if a.Users == nil && (cl == nil || !cl.IsConnected()) {
 		http.Redirect(w, r, "/hotspot/users", http.StatusSeeOther)
 		return
@@ -1774,7 +1774,7 @@ func (a *App) HandleSetMonitorProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if cl == nil || !cl.IsConnected() {
 		a.setFlash(w, r, "Error: Tidak terhubung ke router.")
 		http.Redirect(w, r, "/hotspot/profiles", http.StatusSeeOther)

@@ -24,13 +24,7 @@ func (s *RouterService) Get(id int) (*core.Router, error) {
 }
 
 func (s *RouterService) Save(r *core.Router) error {
-	if err := s.repos.SaveRouter(r); err != nil {
-		return err
-	}
-	if r.Password != "" {
-		_ = s.pool.Connect(r)
-	}
-	return nil
+	return s.repos.SaveRouter(r)
 }
 
 func (s *RouterService) Delete(id int) error {

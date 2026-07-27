@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"mikvoc/internal/core"
 	"mikvoc/internal/repository"
 	"mikvoc/internal/routeros"
 )
@@ -26,6 +27,10 @@ type SalesService struct {
 
 func NewSales(pool *Pool, sales repository.SaleRepo) *SalesService {
 	return &SalesService{pool: pool, sales: sales}
+}
+
+func (s *SalesService) List(routerID int, from, to string) ([]core.Sale, error) {
+	return s.sales.GetSales(routerID, from, to)
 }
 
 func (s *SalesService) SyncFromRouter(routerID int) (inserted int, err error) {

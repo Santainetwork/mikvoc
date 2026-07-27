@@ -77,6 +77,10 @@ func (a *App) HandleSettings(w http.ResponseWriter, r *http.Request) {
 			return
 
 		case "router":
+			if a.Routers == nil {
+				a.setFlash(w, r, "Service router tidak tersedia.")
+				break
+			}
 			var id int
 			fmt.Sscanf(r.FormValue("router_id"), "%d", &id)
 			ip := r.FormValue("router_ip")
@@ -89,9 +93,9 @@ func (a *App) HandleSettings(w http.ResponseWriter, r *http.Request) {
 			name := r.FormValue("router_name")
 			voucherTmpl := r.FormValue("router_voucher_template")
 
-			rt, _ := database.GetRouter(id)
+			rt, _ := a.Routers.Get(id)
 			if rt == nil {
-				rt = &database.Router{}
+				rt = &core.Router{}
 			}
 			rt.ID = id
 			rt.Name = name
@@ -104,15 +108,18 @@ func (a *App) HandleSettings(w http.ResponseWriter, r *http.Request) {
 			if password != "" {
 				rt.Password = password
 			}
-			_ = database.SaveRouter(rt)
+			err := a.Routers.Save(rt)
 			a.InvalidateRoutersCache()
 
-			if err := a.ConnectRouter(rt); err != nil {
-				a.setFlash(w, r, "Pengaturan disimpan, tapi gagal konek: "+err.Error())
-			} else {
+			if err == nil {
+				err = a.Routers.Connect(rt.ID)
+			}
+			if err == nil {
 				// Set session to this router
 				a.SetSessionRouterID(w, r, rt.ID)
 				a.setFlash(w, r, "Router berhasil disambungkan.")
+			} else {
+				a.setFlash(w, r, "Pengaturan disimpan, tapi gagal konek: "+err.Error())
 			}
 
 		case "router_delete":
@@ -125,14 +132,7 @@ func (a *App) HandleSettings(w http.ResponseWriter, r *http.Request) {
 			var err error
 			if a.Routers != nil {
 				err = a.Routers.Delete(id)
-				a.mu.Lock()
-				if cl, ok := a.clients[id]; ok && cl != nil {
-					cl.Close()
-					delete(a.clients, id)
-				}
-				a.mu.Unlock()
 			} else {
-				a.DisconnectRouter(id)
 				err = database.DeleteRouter(id)
 			}
 			if err != nil {
@@ -232,7 +232,12 @@ func (a *App) HandleSwitchRouter(w http.ResponseWriter, r *http.Request) {
 	var id int
 	fmt.Sscanf(r.FormValue("id"), "%d", &id)
 
-	rt, err := database.GetRouter(id)
+	if a.Routers == nil {
+		a.setFlash(w, r, "Service router tidak tersedia.")
+		http.Redirect(w, r, "/routers", http.StatusSeeOther)
+		return
+	}
+	rt, err := a.Routers.Get(id)
 	if err != nil || rt == nil {
 		a.setFlash(w, r, "Router tidak ditemukan.")
 		http.Redirect(w, r, "/routers", http.StatusSeeOther)
@@ -244,11 +249,11 @@ func (a *App) HandleSwitchRouter(w http.ResponseWriter, r *http.Request) {
 
 	// Connect in background — avoid blocking the request (10s dial timeout per attempt).
 	// Dashboard will show "Offline" until the connection succeeds.
-	go func(rt *database.Router) {
-		if err := a.ConnectRouter(rt); err != nil {
+	go func() {
+		if err := a.Routers.Connect(id); err != nil {
 			log.Printf("[warn] switch-router: connect %s: %v", rt.IP, err)
 		}
-	}(rt)
+	}()
 
 	a.setFlash(w, r, "Sesi dipilih: "+rt.Name+". Menghubungkan ke router di latar belakang...")
 	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)

@@ -105,14 +105,6 @@ func (a *App) HandleRestore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.mu.Lock()
-	for id, cl := range a.clients {
-		if cl != nil {
-			cl.Close()
-		}
-		delete(a.clients, id)
-	}
-	a.mu.Unlock()
 	if a.Pool != nil {
 		a.Pool.Clear()
 	}
@@ -149,7 +141,9 @@ func (a *App) HandleRestore(w http.ResponseWriter, r *http.Request) {
 	a.InvalidateSettingsCache()
 	a.InvalidateRoutersCache()
 	a.InvalidateTemplateCache()
-	go a.ConnectAll()
+	if a.Routers != nil {
+		go func() { _ = a.Routers.ConnectAll() }()
+	}
 
 	a.audit(r, "restore", filepath.Base(bak))
 	a.setFlash(w, r, "Restore berhasil. Database diganti (backup lama: "+filepath.Base(bak)+").")

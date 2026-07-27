@@ -62,7 +62,7 @@ func (a *App) HandleProfileClone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cl := a.clientFor(r)
+	cl := a.Pool.Client(sessionRouterID(r))
 	if cl == nil || !cl.IsConnected() {
 		a.setFlash(w, r, "Error: Tidak terhubung ke router.")
 		http.Redirect(w, r, "/hotspot/profiles", http.StatusSeeOther)

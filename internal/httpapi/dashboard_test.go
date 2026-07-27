@@ -1,6 +1,47 @@
 package httpapi
 
-import "testing"
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
+
+func TestDashboardHandlersRequireStatsService(t *testing.T) {
+	app := &App{}
+	for _, handler := range []http.HandlerFunc{app.HandleDashboard, app.HandleDashboardAPI, app.HandleTrafficAPI} {
+		rec := httptest.NewRecorder()
+		handler(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+		if rec.Code != http.StatusServiceUnavailable {
+			t.Fatalf("status = %d, want %d", rec.Code, http.StatusServiceUnavailable)
+		}
+	}
+}
+
+func TestDashboardResponseEscapesRouterValues(t *testing.T) {
+	payload := dashboardResponse{Connected: true, Board: `RB5009"test`, HealthDetail: "line\nbreak"}
+	var body strings.Builder
+	if err := json.NewEncoder(&body).Encode(payload); err != nil {
+		t.Fatal(err)
+	}
+	var decoded dashboardResponse
+	if err := json.Unmarshal([]byte(body.String()), &decoded); err != nil {
+		t.Fatalf("invalid JSON %q: %v", body.String(), err)
+	}
+	if decoded.Board != payload.Board || decoded.HealthDetail != payload.HealthDetail {
+		t.Fatalf("decoded = %#v, want %#v", decoded, payload)
+	}
+	var fields map[string]any
+	if err := json.Unmarshal([]byte(body.String()), &fields); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"active", "users", "mem_pct"} {
+		if _, ok := fields[key]; !ok {
+			t.Fatalf("zero-value field %q missing from %s", key, body.String())
+		}
+	}
+}
 
 func TestDashboardHealthSummaryClassifiesRouterState(t *testing.T) {
 	tests := []struct {

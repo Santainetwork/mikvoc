@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
-	"log"
 	"net/http"
 	"path"
 	"strings"
@@ -43,9 +42,7 @@ type TemplateData struct {
 
 // App holds shared application state.
 type App struct {
-	mu             sync.RWMutex
 	templateEditMu sync.Mutex
-	clients        map[int]*routeros.Client // key = router DB ID
 
 	// Template cache: tmplName -> compiled *template.Template
 	tmplMu    sync.RWMutex
@@ -75,9 +72,6 @@ type App struct {
 	Store            *repository.Store
 	DBPath           string
 	Secret           string
-
-	keepAliveStop chan struct{}
-	keepAliveOnce sync.Once
 }
 
 const settingsTTL = 30 * time.Second
@@ -94,7 +88,6 @@ func NewApp(
 	gen *service.GenerateService,
 ) *App {
 	return &App{
-		clients:   make(map[int]*routeros.Client),
 		tmplCache: make(map[string]*template.Template),
 		Store:     store,
 		Pool:      pool,
@@ -270,96 +263,17 @@ func (a *App) SetSessionRouterID(w http.ResponseWriter, r *http.Request, id int)
 	_ = sess.Save(r, w)
 }
 
-// clientFor returns the *routeros.Client for the router chosen by this request's session.
-func (a *App) clientFor(r *http.Request) *routeros.Client {
-	id := sessionRouterID(r)
-	if id == 0 {
-		return nil
-	}
-	a.mu.RLock()
-	cl := a.clients[id]
-	a.mu.RUnlock()
-	return cl
-}
-
 // routerFor returns the database.Router for the current session (uses in-memory cache).
 func (a *App) routerFor(r *http.Request) *database.Router {
 	return a.cachedRouter(sessionRouterID(r))
 }
 
-// ConnectRouter connects to a specific router by DB ID and stores the client.
-func (a *App) ConnectRouter(rt *database.Router) error {
-	port := rt.Port
-	if port == "" {
-		port = "8728"
-	}
-
-	a.mu.Lock()
-	// Close existing connection first
-	if existing, ok := a.clients[rt.ID]; ok && existing != nil {
-		existing.Close()
-	}
-	a.mu.Unlock()
-
-	cl := routeros.NewClient(rt.IP, port)
-	if err := cl.Connect(rt.Username, rt.Password); err != nil {
-		return err
-	}
-
-	a.mu.Lock()
-	a.clients[rt.ID] = cl
-	a.mu.Unlock()
-	if a.Pool != nil {
-		a.Pool.Put(rt.ID, cl)
-	}
-	return nil
-}
-
-// ConnectAll attempts to connect to all saved routers in the database.
-func (a *App) ConnectAll() {
-	routers, err := database.GetRouters()
-	if err != nil {
-		return
-	}
-	for i := range routers {
-		// Connect in background to avoid blocking server startup.
-		go func(rt database.Router) {
-			if err := a.ConnectRouter(&rt); err != nil {
-				log.Printf("[warn] Router %s: %v", rt.IP, err)
-			} else {
-				log.Printf("[info] Connected: %s (%s)", rt.Name, rt.IP)
-			}
-		}(routers[i])
-	}
-}
-
-// DisconnectRouter closes the API connection for a router and removes it from the client map.
-func (a *App) DisconnectRouter(id int) {
-	if id == 0 {
-		return
-	}
-	a.mu.Lock()
-	if cl, ok := a.clients[id]; ok && cl != nil {
-		cl.Close()
-		delete(a.clients, id)
-	}
-	a.mu.Unlock()
-	if a.Pool != nil {
-		a.Pool.Put(id, nil)
-		a.Pool.InvalidateUsers(id)
-	}
-}
-
 func (a *App) getUsersCached(r *http.Request, profile string) ([]routeros.HotspotUser, error) {
 	id := sessionRouterID(r)
-	if a.Pool != nil && id != 0 && a.Pool.IsConnected(id) {
-		return a.Pool.GetUsersCached(id, profile)
-	}
-	cl := a.clientFor(r)
-	if cl == nil || !cl.IsConnected() {
+	if a.Pool == nil || id == 0 {
 		return nil, fmt.Errorf("not connected")
 	}
-	return cl.GetUsers(profile)
+	return a.Pool.GetUsersCached(id, profile)
 }
 
 func (a *App) getUserByIDCached(r *http.Request, userID string) (routeros.HotspotUser, bool) {
@@ -383,72 +297,6 @@ func (a *App) invalidateUsers(r *http.Request) {
 		return
 	}
 	a.Pool.InvalidateUsers(sessionRouterID(r))
-}
-
-func (a *App) StartKeepAlive(interval time.Duration) {
-	if a == nil {
-		return
-	}
-	if interval <= 0 {
-		interval = 30 * time.Second
-	}
-	a.keepAliveOnce.Do(func() {
-		a.keepAliveStop = make(chan struct{})
-		go a.keepAliveLoop(interval)
-	})
-}
-
-func (a *App) keepAliveLoop(interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-a.keepAliveStop:
-			return
-		case <-ticker.C:
-			a.pingClients()
-		}
-	}
-}
-
-func (a *App) pingClients() {
-	a.mu.RLock()
-	ids := make([]int, 0, len(a.clients))
-	for id := range a.clients {
-		ids = append(ids, id)
-	}
-	a.mu.RUnlock()
-
-	for _, id := range ids {
-		a.mu.RLock()
-		cl := a.clients[id]
-		a.mu.RUnlock()
-		if cl == nil || !cl.IsConnected() {
-			a.mu.Lock()
-			if cur, ok := a.clients[id]; ok && cur == cl {
-				delete(a.clients, id)
-			}
-			a.mu.Unlock()
-			if a.Pool != nil {
-				a.Pool.Put(id, nil)
-				a.Pool.InvalidateUsers(id)
-			}
-			continue
-		}
-		if _, err := cl.Run("/system/identity/print"); err != nil {
-			log.Printf("[keepalive] router %d ping failed: %v", id, err)
-			a.mu.Lock()
-			if cur, ok := a.clients[id]; ok && cur == cl {
-				cl.Close()
-				delete(a.clients, id)
-			}
-			a.mu.Unlock()
-			if a.Pool != nil {
-				a.Pool.Put(id, nil)
-				a.Pool.InvalidateUsers(id)
-			}
-		}
-	}
 }
 
 // getTemplate returns a compiled template from cache, or parses and caches it.
@@ -496,7 +344,10 @@ func (a *App) getTemplate(tmplName string) (*template.Template, error) {
 
 // render executes a named template within the full layout using cached templates and settings.
 func (a *App) render(w http.ResponseWriter, r *http.Request, tmplName string, data TemplateData) {
-	cl := a.clientFor(r)
+	var cl *routeros.Client
+	if a.Pool != nil {
+		cl = a.Pool.Client(sessionRouterID(r))
+	}
 	rt := a.routerFor(r)
 
 	// Use cached lookups instead of DB hits per request

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -8,8 +9,15 @@ import (
 )
 
 type memSaleRepo struct {
-	keys map[string]bool
-	n    int
+	keys     map[string]bool
+	n        int
+	sales    []core.Sale
+	listErr  error
+	listArgs struct {
+		routerID int
+		from     string
+		to       string
+	}
 }
 
 func (m *memSaleRepo) AddSale(routerID int, username, profile, comment string, price int) error {
@@ -37,7 +45,36 @@ func (m *memSaleRepo) AddSaleWithTimeIdempotent(routerID int, username, profile,
 }
 
 func (m *memSaleRepo) GetSales(routerID int, from, to string) ([]core.Sale, error) {
-	return nil, nil
+	m.listArgs.routerID = routerID
+	m.listArgs.from = from
+	m.listArgs.to = to
+	return m.sales, m.listErr
+}
+
+func TestSalesList(t *testing.T) {
+	want := []core.Sale{{ID: 4, RouterID: 7, Username: "voucher-1"}}
+	repo := &memSaleRepo{sales: want}
+	svc := NewSales(NewPool(), repo)
+
+	got, err := svc.List(7, "2026-07-01", "2026-07-31")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0] != want[0] {
+		t.Fatalf("List() = %#v, want %#v", got, want)
+	}
+	if repo.listArgs.routerID != 7 || repo.listArgs.from != "2026-07-01" || repo.listArgs.to != "2026-07-31" {
+		t.Fatalf("GetSales args = %#v", repo.listArgs)
+	}
+}
+
+func TestSalesListReturnsRepositoryError(t *testing.T) {
+	wantErr := errors.New("list failed")
+	svc := NewSales(NewPool(), &memSaleRepo{listErr: wantErr})
+
+	if _, err := svc.List(1, "from", "to"); !errors.Is(err, wantErr) {
+		t.Fatalf("List() error = %v, want %v", err, wantErr)
+	}
 }
 
 func (m *memSaleRepo) GetSalesTotalByDay(routerID int, from, to string) ([]map[string]interface{}, error) {

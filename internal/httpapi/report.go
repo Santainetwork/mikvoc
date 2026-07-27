@@ -9,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"mikvoc/internal/database"
-	"mikvoc/internal/routeros"
+	"mikvoc/internal/core"
 	"mikvoc/internal/service"
 )
 
@@ -36,7 +35,7 @@ type reportProfileSummary struct {
 }
 
 type reportViewData struct {
-	Sales             []database.SaleRecord
+	Sales             []core.Sale
 	Daily             []reportDailySummary
 	ProfileSummaries  []reportProfileSummary
 	ProfileOptions    []string
@@ -101,7 +100,7 @@ func resolveReportFilters(now time.Time, values url.Values) reportFilters {
 	return reportFilters{From: from, To: to, Preset: preset, Profile: profile}
 }
 
-func buildReportViewData(sales []database.SaleRecord, filters reportFilters) reportViewData {
+func buildReportViewData(sales []core.Sale, filters reportFilters) reportViewData {
 	profileSet := map[string]bool{}
 	profileSummaries := map[string]*reportProfileSummary{}
 	for _, sale := range sales {
@@ -132,7 +131,7 @@ func buildReportViewData(sales []database.SaleRecord, filters reportFilters) rep
 		summaries = append(summaries, summary)
 	}
 
-	filtered := make([]database.SaleRecord, 0, len(sales))
+	filtered := make([]core.Sale, 0, len(sales))
 	dailyMap := map[string]*reportDailySummary{}
 	totalRevenue := 0
 	for _, sale := range sales {
@@ -192,23 +191,26 @@ func buildReportViewData(sales []database.SaleRecord, filters reportFilters) rep
 
 // HandleReport renders the sales report page.
 func (a *App) HandleReport(w http.ResponseWriter, r *http.Request) {
+	if a.Sales == nil {
+		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+		return
+	}
 	rt := a.routerFor(r)
 	routerID := 0
 	if rt != nil {
 		routerID = rt.ID
 	}
 
-	if a.Sales != nil && routerID > 0 {
+	if routerID > 0 {
 		_, _ = a.Sales.SyncFromRouter(routerID)
-	} else {
-		cl := a.clientFor(r)
-		if cl != nil && cl.IsConnected() {
-			syncSalesFromRouter(cl, routerID)
-		}
 	}
 
 	filters := resolveReportFilters(time.Now(), r.URL.Query())
-	sales, _ := database.GetSales(routerID, filters.From, filters.To)
+	sales, err := a.Sales.List(routerID, filters.From, filters.To)
+	if err != nil {
+		http.Error(w, "failed to load sales", http.StatusInternalServerError)
+		return
+	}
 	data := buildReportViewData(sales, filters)
 
 	a.render(w, r, "report.html", TemplateData{
@@ -219,6 +221,10 @@ func (a *App) HandleReport(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) HandleSalesPurge(w http.ResponseWriter, r *http.Request) {
+	if a.Sales == nil {
+		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+		return
+	}
 	rt := a.routerFor(r)
 	routerID := 0
 	if rt != nil {
@@ -230,74 +236,18 @@ func (a *App) HandleSalesPurge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if a.Sales != nil {
-		if _, err := a.Sales.SyncFromRouter(routerID); err != nil {
-			a.setFlash(w, r, "Error: Gagal sync sebelum purge: "+err.Error())
-			http.Redirect(w, r, "/report", http.StatusSeeOther)
-			return
-		}
-		n, err := a.Sales.PurgeSyncedScripts(routerID)
-		if err != nil {
-			a.setFlash(w, r, "Error: Gagal bersihkan script: "+err.Error())
-		} else {
-			a.setFlash(w, r, fmt.Sprintf("Success: %d script penjualan di router dibersihkan.", n))
-		}
+	if _, err := a.Sales.SyncFromRouter(routerID); err != nil {
+		a.setFlash(w, r, "Error: Gagal sync sebelum purge: "+err.Error())
 		http.Redirect(w, r, "/report", http.StatusSeeOther)
 		return
 	}
-
-	cl := a.clientFor(r)
-	if cl == nil || !cl.IsConnected() {
-		a.setFlash(w, r, "Error: Tidak terhubung ke router.")
-		http.Redirect(w, r, "/report", http.StatusSeeOther)
-		return
+	n, err := a.Sales.PurgeSyncedScripts(routerID)
+	if err != nil {
+		a.setFlash(w, r, "Error: Gagal bersihkan script: "+err.Error())
+	} else {
+		a.setFlash(w, r, fmt.Sprintf("Success: %d script penjualan di router dibersihkan.", n))
 	}
-	syncSalesFromRouter(cl, routerID)
-	n := purgeSalesScriptsFromRouter(cl)
-	a.setFlash(w, r, fmt.Sprintf("Success: %d script penjualan di router dibersihkan.", n))
 	http.Redirect(w, r, "/report", http.StatusSeeOther)
-}
-
-// syncSalesFromRouter fetches sales scripts and inserts idempotently. Does NOT delete scripts.
-func syncSalesFromRouter(cl *routeros.Client, routerID int) {
-	rows, err := cl.Run("/system/script/print", nil)
-	if err != nil {
-		return
-	}
-	now := time.Now()
-	for _, r := range rows {
-		sale, ok := saleFromRouterScript(r, now)
-		if !ok {
-			continue
-		}
-		_, _ = database.AddSaleWithTimeIdempotent(
-			routerID, sale.Username, sale.Profile, sale.Comment, sale.Price, sale.CreatedAt, sale.SourceKey,
-		)
-	}
-}
-
-func purgeSalesScriptsFromRouter(cl *routeros.Client) int {
-	rows, err := cl.Run("/system/script/print", nil)
-	if err != nil {
-		return 0
-	}
-	removed := 0
-	now := time.Now()
-	for _, r := range rows {
-		if _, ok := saleFromRouterScript(r, now); !ok {
-			continue
-		}
-		if _, err := cl.Run("/system/script/remove", map[string]string{"=.id": r[".id"]}); err == nil {
-			removed++
-		}
-	}
-	return removed
-}
-
-func addSaleRecord(routerID int, username, profile, comment string, price int) {
-	if price > 0 {
-		_ = database.AddSale(routerID, username, profile, comment, price)
-	}
 }
 
 // formatRupiah formats an integer to "Rp 1.000"
