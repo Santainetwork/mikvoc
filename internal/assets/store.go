@@ -236,7 +236,10 @@ func (s *Store) ensureDirs(dir string) error {
 	return nil
 }
 func (s *Store) rejectEntry(p string) error {
-	if !contained(s.root, p) {
+	if err := validateAncestors(s.root, p); err != nil {
+		return err
+	}
+	if !contained(filepath.Clean(s.root), filepath.Clean(p)) {
 		return fmt.Errorf("path escapes store")
 	}
 	st, err := os.Lstat(p)
@@ -281,9 +284,17 @@ func validate(b []byte) (string, error) {
 }
 
 func checkAncestors(p string) error {
-	p, err := filepath.Abs(p)
+	return validateAncestors(p, p)
+}
+
+func validateAncestors(root, p string) error {
+	root, err := filepath.Abs(root)
 	if err != nil {
 		return err
+	}
+	p, err = filepath.Abs(p)
+	if err != nil || !contained(root, p) {
+		return fmt.Errorf("path escapes store")
 	}
 	for cur := p; ; cur = filepath.Dir(cur) {
 		st, err := os.Lstat(cur)
@@ -293,9 +304,12 @@ func checkAncestors(p string) error {
 		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
+		if cur == root {
+			return nil
+		}
 		parent := filepath.Dir(cur)
 		if parent == cur {
-			return nil
+			return fmt.Errorf("path escapes store")
 		}
 	}
 }

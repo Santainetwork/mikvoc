@@ -191,6 +191,41 @@ func TestStoreRejectsSymlinks(t *testing.T) {
 	}
 }
 
+func TestStoreRejectsAncestorSymlinkForReadAndRemoval(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "assets")
+	s := New(root)
+	data := largePNG(t, 2, 2)
+	if _, err := s.Write(9, Logo, bytes.NewReader(data), 1<<20); err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(t.TempDir(), "outside")
+	if err := os.MkdirAll(filepath.Join(outside, "9"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	outsideFile := filepath.Join(outside, "9", "logo.png")
+	if err := os.WriteFile(outsideFile, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(filepath.Join(root, "routers")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "routers")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Read(9, Logo); err == nil {
+		t.Fatal("read followed ancestor symlink")
+	}
+	if err := s.Remove(9, Logo); err == nil {
+		t.Fatal("remove followed ancestor symlink")
+	}
+	if err := s.RemoveRouter(9); err == nil {
+		t.Fatal("router removal followed ancestor symlink")
+	}
+	if _, err := os.Stat(outsideFile); err != nil {
+		t.Fatalf("outside file was affected: %v", err)
+	}
+}
+
 func testImage(w, h int) image.Image {
 	m := image.NewRGBA(image.Rect(0, 0, w, h))
 	m.Set(0, 0, color.White)
