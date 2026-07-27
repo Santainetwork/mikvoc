@@ -101,6 +101,14 @@ func TestBuildTemplateZipRejectsUnsafeAndDuplicateNames(t *testing.T) {
 	}
 }
 
+func TestTemplateDownloadRequiresTemplateService(t *testing.T) {
+	rec := httptest.NewRecorder()
+	(&App{}).HandleTemplateDownload(rec, httptest.NewRequest(http.MethodGet, "/template/download", nil))
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusServiceUnavailable)
+	}
+}
+
 func TestHandleTemplateDownloadBuildsGlobalCustomPackageWithoutRouter(t *testing.T) {
 	withTestDB(t)
 	middleware.InitSession("test-secret")
@@ -118,7 +126,7 @@ func TestHandleTemplateDownloadBuildsGlobalCustomPackageWithoutRouter(t *testing
 		}
 	}
 
-	app := &App{}
+	app := templateTestApp()
 	rec := httptest.NewRecorder()
 	app.HandleTemplateDownload(rec, httptest.NewRequest(http.MethodGet, "/template/download", nil))
 	if rec.Code != http.StatusOK {
@@ -154,7 +162,7 @@ func TestHandleTemplateDownloadRedirectsInvalidCustomTemplate(t *testing.T) {
 	}
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/template/download", nil)
-	(&App{}).HandleTemplateDownload(rec, req)
+	templateTestApp().HandleTemplateDownload(rec, req)
 	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/template" {
 		t.Fatalf("response = %d Location %q", rec.Code, rec.Header().Get("Location"))
 	}

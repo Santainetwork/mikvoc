@@ -15,7 +15,6 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"mikvoc/internal/database"
 	"mikvoc/internal/middleware"
 )
 
@@ -50,8 +49,8 @@ type TemplateEditorData struct {
 	RouterName        string
 }
 
-func templateEditorViewData(routerID int) TemplateEditorData {
-	settings := database.GetRouterSettings(routerID)
+func (a *App) templateEditorViewData(routerID int) TemplateEditorData {
+	settings := a.currentHotspotSettings(routerID)
 	defaults := map[string]string{
 		"tpl_app_name":      "Hotspot Login",
 		"tpl_subtitle":      "Masukkan username dan password untuk akses internet",
@@ -126,6 +125,10 @@ func templateEditorViewData(routerID int) TemplateEditorData {
 // HandleTemplateEditor renders the template editor page and handles saving/pushing.
 // Template settings are stored per-router (router_settings table) with global fallback.
 func (a *App) HandleTemplateEditor(w http.ResponseWriter, r *http.Request) {
+	if a.Template == nil {
+		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+		return
+	}
 	if r.Method == http.MethodPost {
 		r.Body = http.MaxBytesReader(w, r.Body, maxTemplateRequestBytes)
 		mediaType := ""
@@ -171,7 +174,7 @@ func (a *App) HandleTemplateEditor(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/template", http.StatusSeeOther)
 			return
 		}
-		_, updates, assembled, err := stageTemplateSettings(currentHotspotSettings(routerID), r.Form, uploadedLogo, uploadedAssets)
+		_, updates, assembled, err := stageTemplateSettings(a.currentHotspotSettings(routerID), r.Form, uploadedLogo, uploadedAssets)
 		if err != nil {
 			a.setFlash(w, r, "Gagal menyimpan template: "+err.Error())
 			http.Redirect(w, r, "/template", http.StatusSeeOther)
@@ -188,7 +191,7 @@ func (a *App) HandleTemplateEditor(w http.ResponseWriter, r *http.Request) {
 			statusHTML = string(assembled.Get("status.html"))
 			logoutHTML = string(assembled.Get("logout.html"))
 		}
-		if err := database.SetTemplateSettings(routerID, updates); err != nil {
+		if err := a.Template.Save(routerID, updates); err != nil {
 			a.setFlash(w, r, "Gagal menyimpan template: "+err.Error())
 			http.Redirect(w, r, "/template", http.StatusSeeOther)
 			return
@@ -196,48 +199,15 @@ func (a *App) HandleTemplateEditor(w http.ResponseWriter, r *http.Request) {
 		a.InvalidateSettingsCache()
 
 		if action == "push" {
-			if a.Template != nil {
-				hotspotDir, err := a.Template.Push(routerID, loginHTML, statusHTML, logoutHTML)
-				if err != nil {
-					if hotspotDir == "" {
-						a.setFlash(w, r, "Gagal upload: Router tidak terhubung.")
-					} else {
-						a.setFlash(w, r, "Gagal upload "+err.Error())
-					}
-				} else {
-					a.setFlash(w, r, fmt.Sprintf("Template berhasil diupload ke Mikrotik (%s).", hotspotDir))
-				}
-			} else {
-				cl := a.Pool.Client(sessionRouterID(r))
-				if cl == nil || !cl.IsConnected() {
+			hotspotDir, err := a.Template.Push(routerID, loginHTML, statusHTML, logoutHTML)
+			if err != nil {
+				if hotspotDir == "" {
 					a.setFlash(w, r, "Gagal upload: Router tidak terhubung.")
 				} else {
-					hotspotDir := "hotspot"
-					profiles, err := cl.Run("/ip/hotspot/profile/print")
-					if err == nil {
-						for _, p := range profiles {
-							dir := p["html-directory"]
-							if dir != "" {
-								hotspotDir = dir
-								break
-							}
-						}
-					}
-
-					err1 := cl.SetFileContent(hotspotDir+"/login.html", loginHTML)
-					err2 := cl.SetFileContent(hotspotDir+"/status.html", statusHTML)
-					err3 := cl.SetFileContent(hotspotDir+"/logout.html", logoutHTML)
-
-					if err1 != nil {
-						a.setFlash(w, r, "Gagal upload login.html ("+hotspotDir+"): "+err1.Error())
-					} else if err2 != nil {
-						a.setFlash(w, r, "Gagal upload status.html ("+hotspotDir+"): "+err2.Error())
-					} else if err3 != nil {
-						a.setFlash(w, r, "Gagal upload logout.html ("+hotspotDir+"): "+err3.Error())
-					} else {
-						a.setFlash(w, r, fmt.Sprintf("Template berhasil diupload ke Mikrotik (%s).", hotspotDir))
-					}
+					a.setFlash(w, r, "Gagal upload "+err.Error())
 				}
+			} else {
+				a.setFlash(w, r, fmt.Sprintf("Template berhasil diupload ke Mikrotik (%s).", hotspotDir))
 			}
 		} else {
 			a.setFlash(w, r, "Pengaturan template berhasil disimpan untuk router ini.")
@@ -248,7 +218,7 @@ func (a *App) HandleTemplateEditor(w http.ResponseWriter, r *http.Request) {
 	}
 
 	routerID := sessionRouterID(r)
-	data := templateEditorViewData(routerID)
+	data := a.templateEditorViewData(routerID)
 	if rt := a.routerFor(r); rt != nil {
 		data.RouterName = rt.Name
 	}
@@ -387,6 +357,10 @@ func logoDataURL(filename string, data []byte) (string, error) {
 
 // HandleSetVoucherTemplate saves the selected voucher print template for the active router.
 func (a *App) HandleSetVoucherTemplate(w http.ResponseWriter, r *http.Request) {
+	if a.Template == nil {
+		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+		return
+	}
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/template", http.StatusSeeOther)
 		return
@@ -404,7 +378,7 @@ func (a *App) HandleSetVoucherTemplate(w http.ResponseWriter, r *http.Request) {
 		tmplID = "classic"
 	}
 	routerID := sessionRouterID(r)
-	if err := database.SetRouterVoucherTemplate(routerID, tmplID); err != nil {
+	if err := a.Template.SetVoucherTemplate(routerID, tmplID); err != nil {
 		a.setFlash(w, r, "Gagal simpan voucher template: "+err.Error())
 	} else {
 		a.setFlash(w, r, "Template cetak voucher diperbarui untuk router ini: "+tmplID)
@@ -419,8 +393,12 @@ func (a *App) HandleTemplatePreview(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) HandleTemplatePreviewFrame(w http.ResponseWriter, r *http.Request) {
+	if a.Template == nil {
+		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+		return
+	}
 	routerID := sessionRouterID(r)
-	loginHTML, _, _ := generateHotspotHTMLFor(routerID)
+	loginHTML, _, _ := a.generateHotspotHTMLFor(routerID)
 	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline' https: http:; script-src 'unsafe-inline' https: http:; img-src data: blob: https: http:; font-src data: https: http:; form-action 'none'; frame-ancestors 'self'")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -429,12 +407,16 @@ func (a *App) HandleTemplatePreviewFrame(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *App) HandleTemplatePreviewAsset(w http.ResponseWriter, r *http.Request) {
+	if a.Template == nil {
+		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+		return
+	}
 	name, err := normalizeAssetName(mux.Vars(r)["path"])
 	if err != nil || isStandardHotspotFile(name) || strings.EqualFold(name, "hotspot") || strings.HasPrefix(strings.ToLower(name), "hotspot/") {
 		http.NotFound(w, r)
 		return
 	}
-	set, err := assembleTemplateFiles(currentHotspotSettings(sessionRouterID(r)))
+	set, err := assembleTemplateFiles(a.currentHotspotSettings(sessionRouterID(r)))
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -543,14 +525,9 @@ func previewHotspotHTML(html string) string {
 	return previewConditionalToken.ReplaceAllString(replacer.Replace(html), "")
 }
 
-// generateHotspotHTML generates login/status/logout HTML using the active router's settings.
-func generateHotspotHTML() (login, status, logout string) {
-	return generateHotspotHTMLFor(0)
-}
-
 // generateHotspotHTMLFor generates HTML using settings for a specific router (0 = global fallback).
-func generateHotspotHTMLFor(routerID int) (login, status, logout string) {
-	settings := currentHotspotSettings(routerID)
+func (a *App) generateHotspotHTMLFor(routerID int) (login, status, logout string) {
+	settings := a.currentHotspotSettings(routerID)
 	variant := normalizeHotspotVariant(settings["tpl_variant"])
 	if variant == "custom" {
 		return customHotspotHTMLFor(settings)

@@ -63,12 +63,29 @@ func TestHandleTemplatePreviewReturnsSandboxedShell(t *testing.T) {
 	}
 }
 
+func TestTemplatePreviewFrameRequiresTemplateService(t *testing.T) {
+	rec := httptest.NewRecorder()
+	(&App{}).HandleTemplatePreviewFrame(rec, httptest.NewRequest(http.MethodGet, "/template/preview/frame", nil))
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusServiceUnavailable)
+	}
+}
+
+func TestTemplatePreviewAssetRequiresTemplateService(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req := mux.SetURLVars(httptest.NewRequest(http.MethodGet, "/template/preview/assets/site.css", nil), map[string]string{"path": "site.css"})
+	(&App{}).HandleTemplatePreviewAsset(rec, req)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusServiceUnavailable)
+	}
+}
+
 func TestHandleTemplatePreviewFrameSetsHeadersAndRendersSamples(t *testing.T) {
 	withTestDB(t)
 	withoutSessionStore(t)
 	rec := httptest.NewRecorder()
 	rec.Header().Set("X-Frame-Options", "DENY")
-	(&App{}).HandleTemplatePreviewFrame(rec, httptest.NewRequest(http.MethodGet, "/template/preview/frame", nil))
+	templateTestApp().HandleTemplatePreviewFrame(rec, httptest.NewRequest(http.MethodGet, "/template/preview/frame", nil))
 
 	if got := rec.Header().Get("X-Frame-Options"); got != "SAMEORIGIN" {
 		t.Fatalf("X-Frame-Options = %q, want SAMEORIGIN", got)
@@ -100,7 +117,7 @@ func TestHandleTemplatePreviewFrameShowsInvalidCustomTemplateError(t *testing.T)
 		t.Fatal(err)
 	}
 	rec := httptest.NewRecorder()
-	(&App{}).HandleTemplatePreviewFrame(rec, httptest.NewRequest(http.MethodGet, "/template/preview/frame", nil))
+	templateTestApp().HandleTemplatePreviewFrame(rec, httptest.NewRequest(http.MethodGet, "/template/preview/frame", nil))
 	if !strings.Contains(rec.Body.String(), "Template custom tidak valid") {
 		t.Fatalf("invalid custom error not visible: %s", rec.Body.String())
 	}
@@ -160,7 +177,7 @@ func TestHandleTemplatePreviewAssetServesOnlyPackageAssets(t *testing.T) {
 		t.Run(tc.path, func(t *testing.T) {
 			rec := httptest.NewRecorder()
 			req := mux.SetURLVars(httptest.NewRequest(http.MethodGet, "/template/preview/assets/"+tc.path, nil), map[string]string{"path": tc.path})
-			(&App{}).HandleTemplatePreviewAsset(rec, req)
+			templateTestApp().HandleTemplatePreviewAsset(rec, req)
 			if rec.Code != http.StatusOK || rec.Body.String() != tc.body {
 				t.Fatalf("asset response = %d %q", rec.Code, rec.Body.String())
 			}
@@ -181,7 +198,7 @@ func TestHandleTemplatePreviewAssetServesOnlyPackageAssets(t *testing.T) {
 		t.Run("reject "+assetPath, func(t *testing.T) {
 			rec := httptest.NewRecorder()
 			req := mux.SetURLVars(httptest.NewRequest(http.MethodGet, "/", nil), map[string]string{"path": assetPath})
-			(&App{}).HandleTemplatePreviewAsset(rec, req)
+			templateTestApp().HandleTemplatePreviewAsset(rec, req)
 			if rec.Code != http.StatusNotFound {
 				t.Fatalf("asset %q status = %d, want 404", assetPath, rec.Code)
 			}

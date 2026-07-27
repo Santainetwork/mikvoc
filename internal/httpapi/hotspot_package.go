@@ -50,7 +50,11 @@ func buildTemplateZip(set templateFileSet) ([]byte, error) {
 }
 
 func (a *App) HandleTemplateDownload(w http.ResponseWriter, r *http.Request) {
-	set, err := assembleTemplateFiles(currentHotspotSettings(sessionRouterID(r)))
+	if a.Template == nil {
+		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	set, err := assembleTemplateFiles(a.currentHotspotSettings(sessionRouterID(r)))
 	if err != nil {
 		a.setFlash(w, r, "Gagal membuat paket template: "+err.Error())
 		http.Redirect(w, r, "/template", http.StatusSeeOther)

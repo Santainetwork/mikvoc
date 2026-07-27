@@ -30,6 +30,24 @@ func TestTemplateSettingKeysComplete(t *testing.T) {
 	}
 }
 
+func TestTemplateEditorRequiresTemplateService(t *testing.T) {
+	rec := httptest.NewRecorder()
+	(&App{}).HandleTemplateEditor(rec, httptest.NewRequest(http.MethodGet, "/template", nil))
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusServiceUnavailable)
+	}
+}
+
+func TestVoucherTemplateSetterRequiresTemplateService(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/template/voucher-template", strings.NewReader("voucher_template=classic"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	(&App{}).HandleSetVoucherTemplate(rec, req)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusServiceUnavailable)
+	}
+}
+
 func TestSanitizeVariantInput(t *testing.T) {
 	got, err := sanitizeVariantInput("  InFoRmAtIvE ")
 	if err != nil || got != "informative" {
@@ -268,7 +286,7 @@ func TestTemplateSaveWaitsForDedicatedEditLock(t *testing.T) {
 	oldStore := middleware.Store
 	middleware.InitSession("template-lock-test-secret")
 	t.Cleanup(func() { middleware.Store = oldStore })
-	app := &App{}
+	app := templateTestApp()
 	app.templateEditMu.Lock()
 	done := make(chan struct{})
 	req := multipartTemplateRequest(t, templateForm("save", "modern"), nil)
@@ -295,7 +313,7 @@ func TestConcurrentTemplateSavesProduceOneCompleteRequest(t *testing.T) {
 	oldStore := middleware.Store
 	middleware.InitSession("template-concurrent-test-secret")
 	t.Cleanup(func() { middleware.Store = oldStore })
-	app := &App{}
+	app := templateTestApp()
 	forms := []url.Values{templateForm("save", "modern"), templateForm("save", "cafe")}
 	for i, form := range forms {
 		marker := []string{"first", "second"}[i]
@@ -347,7 +365,7 @@ func TestTemplatePostContentTypeParsing(t *testing.T) {
 		req := multipartTemplateRequest(t, templateForm("save", "modern"), nil)
 		req.Header.Set("Content-Type", strings.Replace(req.Header.Get("Content-Type"), "multipart/form-data", "Multipart/Form-Data", 1))
 		rec := httptest.NewRecorder()
-		(&App{}).HandleTemplateEditor(rec, req)
+		templateTestApp().HandleTemplateEditor(rec, req)
 		if got := database.GetSetting("tpl_variant"); got != "modern" {
 			t.Fatalf("tpl_variant = %q, want modern", got)
 		}
@@ -362,7 +380,7 @@ func TestTemplatePostContentTypeParsing(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/template", strings.NewReader("action=save&tpl_variant=cafe"))
 		req.Header.Set("Content-Type", `multipart/form-data; boundary="unterminated`)
 		rec := httptest.NewRecorder()
-		(&App{}).HandleTemplateEditor(rec, req)
+		templateTestApp().HandleTemplateEditor(rec, req)
 		if rec.Code != http.StatusSeeOther || !reflect.DeepEqual(database.GetRouterSettings(0), before) {
 			t.Fatalf("malformed POST status=%d settings=%#v", rec.Code, database.GetRouterSettings(0))
 		}
@@ -435,7 +453,7 @@ func postTemplateResponse(t *testing.T, routerID int, form url.Values, parts map
 		}
 	}
 	rec := httptest.NewRecorder()
-	(&App{}).HandleTemplateEditor(rec, req)
+	templateTestApp().HandleTemplateEditor(rec, req)
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("POST status = %d, body = %s", rec.Code, rec.Body.String())
 	}

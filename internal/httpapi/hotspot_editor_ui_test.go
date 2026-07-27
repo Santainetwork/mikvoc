@@ -81,7 +81,7 @@ func TestTemplateEditorViewDataUsesDefaultsAndAssembledFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	data := templateEditorViewData(7)
+	data := templateTestApp().templateEditorViewData(7)
 	if data.RouterID != 7 || data.Settings["tpl_variant"] != "informative" {
 		t.Fatalf("router/variant = %d/%q", data.RouterID, data.Settings["tpl_variant"])
 	}
@@ -116,7 +116,7 @@ func TestTemplateEditorViewDataCustomAssetsAreSortedAndBlockPush(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	data := templateEditorViewData(0)
+	data := templateTestApp().templateEditorViewData(0)
 	if data.Settings["tpl_variant"] != "custom" {
 		t.Fatalf("variant = %q", data.Settings["tpl_variant"])
 	}
@@ -145,7 +145,7 @@ func TestTemplateEditorViewDataHydratesBlankCustomSourceFromZIP(t *testing.T) {
 		"tpl_custom_assets_zip": base64.StdEncoding.EncodeToString(raw),
 	})
 
-	data := templateEditorViewData(0)
+	data := templateTestApp().templateEditorViewData(0)
 	if data.Settings["tpl_custom_login_html"] != login || data.Settings["tpl_custom_status_html"] != status {
 		t.Fatalf("hydrated source = %q / %q", data.Settings["tpl_custom_login_html"], data.Settings["tpl_custom_status_html"])
 	}
@@ -181,7 +181,7 @@ func TestTemplateEditorViewDataSurvivesInvalidCustom(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	data := templateEditorViewData(0)
+	data := templateTestApp().templateEditorViewData(0)
 	if data.Settings["tpl_variant"] != "custom" || !strings.Contains(data.PushBlockedReason, "login.html") {
 		t.Fatalf("invalid custom data = %#v", data)
 	}
@@ -279,7 +279,7 @@ func renderTemplateEditorGET(t *testing.T, routerID int) string {
 	}
 
 	rec := httptest.NewRecorder()
-	NewApp(nil, nil, nil, nil, nil, nil, nil).HandleTemplateEditor(rec, req)
+	templateTestApp().HandleTemplateEditor(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("GET /template status = %d, body = %s", rec.Code, rec.Body.String())
 	}

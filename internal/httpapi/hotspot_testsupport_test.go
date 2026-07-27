@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"mikvoc/internal/database"
+	"mikvoc/internal/repository"
+	"mikvoc/internal/service"
 )
 
 func withTestDB(t *testing.T) {
@@ -24,4 +26,12 @@ func withTestDB(t *testing.T) {
 
 func setTestSetting(key, value string) error {
 	return database.SetSetting(key, value)
+}
+
+func templateTestApp() *App {
+	store := repository.NewStore()
+	pool := service.NewPool()
+	app := NewApp(store, pool, nil, nil, nil, nil, nil)
+	app.Template = service.NewTemplate(pool, store)
+	return app
 }

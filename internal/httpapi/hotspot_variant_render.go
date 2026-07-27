@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"html/template"
 	"strings"
-
-	"mikvoc/internal/database"
 )
 
 type hotspotView struct {
@@ -21,8 +19,8 @@ type hotspotView struct {
 	Redirect  string
 }
 
-func currentHotspotSettings(routerID int) map[string]string {
-	return database.GetRouterSettings(routerID)
+func (a *App) currentHotspotSettings(routerID int) map[string]string {
+	return a.Template.Settings(routerID)
 }
 
 func normalizeHotspotColor(value, fallback string) string {

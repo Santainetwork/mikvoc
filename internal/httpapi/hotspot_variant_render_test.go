@@ -141,8 +141,9 @@ func TestGenerateHotspotHTMLForUsesSelectedVariant(t *testing.T) {
 		t.Fatalf("set variant: %v", err)
 	}
 
-	login, status, logout := generateHotspotHTMLFor(0)
-	if login != renderVariantLogin("cafe", currentHotspotSettings(0)) {
+	app := templateTestApp()
+	login, status, logout := app.generateHotspotHTMLFor(0)
+	if login != renderVariantLogin("cafe", app.currentHotspotSettings(0)) {
 		t.Fatal("generateHotspotHTMLFor should render the stored variant")
 	}
 	if !strings.Contains(status, "$(username)") || !strings.Contains(logout, "$(link-login)") {
