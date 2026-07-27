@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strings"
 
-	"mikvoc/internal/database"
 	"mikvoc/internal/routeros"
 )
 
@@ -49,17 +48,15 @@ type voucherItem struct {
 }
 
 type voucherRenderData struct {
-	Ctx       voucherContext
-	Items     []voucherItem
-	WithQR    bool
-	CSS       template.CSS
-	Count     int
-	Tmpl      string
+	Ctx    voucherContext
+	Items  []voucherItem
+	WithQR bool
+	CSS    template.CSS
+	Count  int
+	Tmpl   string
 }
 
-func newVoucherContext(routerID int, routerName string) voucherContext {
-	settings := database.GetRouterSettings(routerID)
-
+func newVoucherContext(settings map[string]string, routerName string) voucherContext {
 	brandName := settings["tpl_app_name"]
 	if brandName == "" {
 		brandName = routerName
@@ -86,8 +83,8 @@ func newVoucherContext(routerID int, routerName string) voucherContext {
 	}
 }
 
-func generateQuickPrintHTML(tmpl string, routerID int, routerName, username, password, profile, limitUptime, limitBytesTotal, comment, price, validity string, withQR bool) string {
-	ctx := newVoucherContext(routerID, routerName)
+func generateQuickPrintHTML(tmpl string, settings map[string]string, routerName, username, password, profile, limitUptime, limitBytesTotal, comment, price, validity string, withQR bool) string {
+	ctx := newVoucherContext(settings, routerName)
 	user := routeros.HotspotUser{
 		ID:              "quick",
 		Name:            username,
@@ -103,8 +100,8 @@ func generateQuickPrintHTML(tmpl string, routerID int, routerName, username, pas
 	return generateVoucherDocument(tmpl, ctx, []routeros.HotspotUser{user}, meta, withQR)
 }
 
-func generateMultiPrintHTML(tmpl string, routerID int, routerName string, users []routeros.HotspotUser, metas map[string]voucherProfileMeta, withQR bool) string {
-	return generateVoucherDocument(tmpl, newVoucherContext(routerID, routerName), users, metas, withQR)
+func generateMultiPrintHTML(tmpl string, settings map[string]string, routerName string, users []routeros.HotspotUser, metas map[string]voucherProfileMeta, withQR bool) string {
+	return generateVoucherDocument(tmpl, newVoucherContext(settings, routerName), users, metas, withQR)
 }
 
 func buildVoucherItems(ctx voucherContext, users []routeros.HotspotUser, metas map[string]voucherProfileMeta, withQR bool, stackUP bool, qrSize int) []voucherItem {
@@ -156,12 +153,12 @@ func generateVoucherDocument(tmpl string, ctx voucherContext, users []routeros.H
 	}
 
 	data := voucherRenderData{
-		Ctx:       ctx,
-		Items:     buildVoucherItems(ctx, users, metas, withQR, stackUP, qrSize),
-		WithQR:    withQR,
-		CSS:       template.CSS(css + baseVoucherCSS),
-		Count:     len(users),
-		Tmpl:      tmpl,
+		Ctx:    ctx,
+		Items:  buildVoucherItems(ctx, users, metas, withQR, stackUP, qrSize),
+		WithQR: withQR,
+		CSS:    template.CSS(css + baseVoucherCSS),
+		Count:  len(users),
+		Tmpl:   tmpl,
 	}
 
 	var buf bytes.Buffer

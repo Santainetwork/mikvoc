@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"mikvoc/internal/core"
-	"mikvoc/internal/database"
 	"mikvoc/internal/routeros"
 	"mikvoc/internal/service"
 )
@@ -577,6 +576,11 @@ func (a *App) HandleUsers(w http.ResponseWriter, r *http.Request) {
 // Mikhmon-compatible: filter by comment batch prints unused vouchers (uptime=0) only,
 // unless ids= is set (selected users) or all=1 is forced.
 func (a *App) HandlePrint(w http.ResponseWriter, r *http.Request) {
+	if a.Template == nil {
+		http.Error(w, "template service unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	routerID := sessionRouterID(r)
 	cl := a.Pool.Client(sessionRouterID(r))
 	if a.Users == nil && (cl == nil || !cl.IsConnected()) {
 		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
@@ -614,20 +618,10 @@ func (a *App) HandlePrint(w http.ResponseWriter, r *http.Request) {
 		profileMeta[p.Name] = voucherProfileMeta{Price: profileVoucherPrice(p), Validity: p.Validity}
 	}
 
-	tmplID := strings.TrimSpace(r.URL.Query().Get("template"))
-	if tmplID == "" {
-		if r.URL.Query().Get("small") == "yes" {
-			tmplID = "compact"
-		} else {
-			tmplID = database.GetRouterVoucherTemplate(sessionRouterID(r))
-		}
-	}
-	if tmplID == "" {
-		tmplID = "classic"
-	}
+	tmplID := voucherTemplateID(r.URL.Query().Get("template"), r.URL.Query().Get("small"), a.Template.VoucherTemplate(routerID), true)
 
 	withQR := r.URL.Query().Get("qr") == "yes"
-	html := generateMultiPrintHTML(tmplID, sessionRouterID(r), routerName, users, profileMeta, withQR)
+	html := generateMultiPrintHTML(tmplID, a.Template.Settings(routerID), routerName, users, profileMeta, withQR)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
@@ -1130,7 +1124,12 @@ func (a *App) HandleRemoveComment(w http.ResponseWriter, r *http.Request) {
 // HandleGenerate renders the voucher generation form (GET) and generates (POST).
 // After success, Mikhmon-style: redirect to print page filtered by batch comment.
 func (a *App) HandleGenerate(w http.ResponseWriter, r *http.Request) {
-	cl := a.Pool.Client(sessionRouterID(r))
+	if a.Template == nil {
+		http.Error(w, "template service unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	routerID := sessionRouterID(r)
+	cl := a.Pool.Client(routerID)
 	type GenData struct {
 		Profiles      []routeros.HotspotUserProfile
 		Servers       []map[string]string
@@ -1144,7 +1143,7 @@ func (a *App) HandleGenerate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	d := GenData{
-		LoginMode: database.GetSetting("tpl_login_mode"),
+		LoginMode: a.Template.Settings(routerID)["tpl_login_mode"],
 	}
 	if cl != nil && cl.IsConnected() {
 		d.Profiles, _ = cl.GetProfiles()
@@ -1654,7 +1653,12 @@ func (a *App) HandleExportScript(w http.ResponseWriter, r *http.Request) {
 // HandleQuickPrint renders a printable single-voucher slip for one user (GET).
 // Uses the voucher_template setting to choose the print style.
 func (a *App) HandleQuickPrint(w http.ResponseWriter, r *http.Request) {
-	cl := a.Pool.Client(sessionRouterID(r))
+	if a.Template == nil {
+		http.Error(w, "template service unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	routerID := sessionRouterID(r)
+	cl := a.Pool.Client(routerID)
 	if a.Users == nil && (cl == nil || !cl.IsConnected()) {
 		http.Redirect(w, r, "/hotspot/users", http.StatusSeeOther)
 		return
@@ -1712,17 +1716,11 @@ func (a *App) HandleQuickPrint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Read voucher template preference from active router (default: classic)
-	tmplID := strings.TrimSpace(r.URL.Query().Get("template"))
-	if tmplID == "" {
-		tmplID = database.GetRouterVoucherTemplate(sessionRouterID(r))
-	}
-	if tmplID == "" {
-		tmplID = "classic"
-	}
+	tmplID := voucherTemplateID(r.URL.Query().Get("template"), r.URL.Query().Get("small"), a.Template.VoucherTemplate(routerID), false)
 	withQR := r.URL.Query().Get("qr") == "yes"
 
 	html := generateQuickPrintHTML(
-		tmplID, sessionRouterID(r), routerName,
+		tmplID, a.Template.Settings(routerID), routerName,
 		found.Name, found.Password, found.Profile,
 		found.LimitUptime, found.LimitBytesTotal,
 		found.Comment, price, validity,
@@ -1731,6 +1729,19 @@ func (a *App) HandleQuickPrint(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte(html))
+}
+
+func voucherTemplateID(query, small, saved string, batch bool) string {
+	if tmpl := strings.TrimSpace(query); tmpl != "" {
+		return tmpl
+	}
+	if batch && small == "yes" {
+		return "compact"
+	}
+	if saved != "" {
+		return saved
+	}
+	return "classic"
 }
 
 func profileVoucherPrice(p routeros.HotspotUserProfile) string {

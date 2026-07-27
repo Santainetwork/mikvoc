@@ -1,11 +1,9 @@
 package httpapi
 
 import (
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"mikvoc/internal/database"
 	"mikvoc/internal/routeros"
 )
 
@@ -29,15 +27,10 @@ func TestVoucherContextUsesConfiguredLogoSources(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			withTestDatabase(t)
-			if err := database.SetSetting("tpl_app_name", "Configured Hotspot"); err != nil {
-				t.Fatalf("set app name setting: %v", err)
-			}
-			if err := database.SetSetting("tpl_logo_url", tt.value); err != nil {
-				t.Fatalf("set logo setting: %v", err)
-			}
-
-			ctx := newVoucherContext(0, "Fallback Router")
+			ctx := newVoucherContext(map[string]string{
+				"tpl_app_name": "Configured Hotspot",
+				"tpl_logo_url": tt.value,
+			}, "Fallback Router")
 			if ctx.LogoURL != tt.value {
 				t.Fatalf("expected LogoURL from tpl_logo_url to be %q, got %q", tt.value, ctx.LogoURL)
 			}
@@ -55,35 +48,11 @@ func TestVoucherContextUsesConfiguredLogoSources(t *testing.T) {
 }
 
 func TestVoucherContextPerRouterIdentityNotShared(t *testing.T) {
-	withTestDatabase(t)
-	if err := database.SetSetting("tpl_app_name", "Global Hotspot"); err != nil {
-		t.Fatalf("set global app name: %v", err)
-	}
-	if err := database.SetSetting("tpl_logo_url", "https://cdn.example.test/global-logo.png"); err != nil {
-		t.Fatalf("set global logo: %v", err)
-	}
-	if err := database.SetSetting("tpl_dns_name", "global.local"); err != nil {
-		t.Fatalf("set global dns: %v", err)
-	}
-
-	if err := database.SetRouterSetting(1, "tpl_app_name", "Warnet Alfa"); err != nil {
-		t.Fatalf("set router1 app name: %v", err)
-	}
-	if err := database.SetRouterSetting(1, "tpl_logo_url", "https://cdn.example.test/alfa-logo.png"); err != nil {
-		t.Fatalf("set router1 logo: %v", err)
-	}
-	if err := database.SetRouterSetting(1, "tpl_dns_name", "alfa.local"); err != nil {
-		t.Fatalf("set router1 dns: %v", err)
-	}
-
-	if err := database.SetRouterSetting(2, "tpl_app_name", "Cafe Beta"); err != nil {
-		t.Fatalf("set router2 app name: %v", err)
-	}
-	if err := database.SetRouterSetting(2, "tpl_logo_url", "https://cdn.example.test/beta-logo.png"); err != nil {
-		t.Fatalf("set router2 logo: %v", err)
-	}
-
-	router1 := newVoucherContext(1, "fallback")
+	router1 := newVoucherContext(map[string]string{
+		"tpl_app_name": "Warnet Alfa",
+		"tpl_logo_url": "https://cdn.example.test/alfa-logo.png",
+		"tpl_dns_name": "alfa.local",
+	}, "fallback")
 	if router1.BrandName != "Warnet Alfa" {
 		t.Fatalf("router1 BrandName = %q, want %q", router1.BrandName, "Warnet Alfa")
 	}
@@ -94,7 +63,11 @@ func TestVoucherContextPerRouterIdentityNotShared(t *testing.T) {
 		t.Fatalf("router1 DNSName = %q, want alfa.local", router1.DNSName)
 	}
 
-	router2 := newVoucherContext(2, "fallback")
+	router2 := newVoucherContext(map[string]string{
+		"tpl_app_name": "Cafe Beta",
+		"tpl_logo_url": "https://cdn.example.test/beta-logo.png",
+		"tpl_dns_name": "global.local",
+	}, "fallback")
 	if router2.BrandName != "Cafe Beta" {
 		t.Fatalf("router2 BrandName = %q, want %q", router2.BrandName, "Cafe Beta")
 	}
@@ -105,9 +78,31 @@ func TestVoucherContextPerRouterIdentityNotShared(t *testing.T) {
 		t.Fatalf("router2 DNSName = %q, want global fallback global.local", router2.DNSName)
 	}
 
-	noRouter := newVoucherContext(0, "fallback")
+	noRouter := newVoucherContext(map[string]string{"tpl_app_name": "Global Hotspot"}, "fallback")
 	if noRouter.BrandName != "Global Hotspot" {
 		t.Fatalf("no-router BrandName = %q, want global fallback", noRouter.BrandName)
+	}
+}
+
+func TestVoucherContextDefaultsArePure(t *testing.T) {
+	ctx := newVoucherContext(nil, "Router Name")
+	if ctx.BrandName != "Router Name" || ctx.LogoText != "NET" || ctx.DNSName != "hotspot.local" {
+		t.Fatalf("context = %#v", ctx)
+	}
+	ctx = newVoucherContext(nil, "")
+	if ctx.BrandName != "MikVoc Hotspot" {
+		t.Fatalf("BrandName = %q, want MikVoc Hotspot", ctx.BrandName)
+	}
+}
+
+func TestGenerateMultiPrintHTMLUsesResolvedRouterBranding(t *testing.T) {
+	html := generateMultiPrintHTML("classic", map[string]string{
+		"tpl_app_name":  "Router Seven",
+		"tpl_logo_text": "R7",
+		"tpl_dns_name":  "seven.local",
+	}, "fallback", []routeros.HotspotUser{{Name: "voucher", Password: "secret"}}, nil, true)
+	for _, want := range []string{"Router Seven", "R7", "seven.local/login?username=voucher"} {
+		assertContains(t, html, want)
 	}
 }
 
@@ -273,22 +268,6 @@ func testVoucherContext() voucherContext {
 
 func testVoucherMetas() map[string]voucherProfileMeta {
 	return map[string]voucherProfileMeta{"1d": {Price: "2000", Validity: "1d"}}
-}
-
-func withTestDatabase(t *testing.T) {
-	t.Helper()
-	oldDB := database.DB
-	path := filepath.Join(t.TempDir(), "mikvoc.db")
-	if err := database.Init(path, "test-secret"); err != nil {
-		t.Fatalf("init test database: %v", err)
-	}
-	newDB := database.DB
-	t.Cleanup(func() {
-		if newDB != nil {
-			_ = newDB.Close()
-		}
-		database.DB = oldDB
-	})
 }
 
 func assertContains(t *testing.T, got, want string) {
