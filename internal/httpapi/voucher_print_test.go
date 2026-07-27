@@ -112,6 +112,50 @@ func TestHandlePrintUsesActiveRouterTemplateAndMergedBranding(t *testing.T) {
 	}
 }
 
+func TestHandleQuickPrintUsesActiveRouterTemplateAndMergedBranding(t *testing.T) {
+	withTestDB(t)
+	middleware.InitSession("voucher-quick-print-router")
+	if err := database.SetTemplateSettings(0, map[string]string{
+		"tpl_app_name": "Global Quick Cafe",
+		"tpl_dns_name": "quick.example",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	router := &database.Router{Name: "Quick Router", IP: "127.0.0.1", Username: "admin", VoucherTemplate: "thermal"}
+	if err := database.SaveRouter(router); err != nil {
+		t.Fatal(err)
+	}
+	if err := database.SetTemplateSettings(router.ID, map[string]string{"tpl_logo_text": "QR7"}); err != nil {
+		t.Fatal(err)
+	}
+
+	address := startVoucherRouterOS(t)
+	host, port, err := net.SplitHostPort(address)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pool := service.NewPool()
+	if err := pool.Connect(&core.Router{ID: router.ID, IP: host, Port: port, Username: "admin"}); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Clear)
+	store := repository.NewStore()
+	app := NewApp(store, pool, nil, nil, service.NewUser(pool), service.NewProfile(pool), nil)
+	app.Template = service.NewTemplate(pool, store)
+
+	req := voucherRequestForRouter(t, app, "/hotspot/users/quickprint?username=voucher-1", router.ID)
+	rec := httptest.NewRecorder()
+	app.HandleQuickPrint(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200: %s", rec.Code, rec.Body.String())
+	}
+	for _, want := range []string{"height:100px", "Global Quick Cafe", "QR7", "quick.example"} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Fatalf("rendered quick voucher missing %q", want)
+		}
+	}
+}
+
 func voucherRequestForRouter(t *testing.T, app *App, path string, routerID int) *http.Request {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, path, nil)
