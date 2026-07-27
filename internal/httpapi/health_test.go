@@ -31,7 +31,7 @@ func TestHandleHealthzAndMetrics(t *testing.T) {
 
 	store := repository.NewStore()
 	pool := service.NewPool()
-	app := NewApp(store, pool, service.NewAuth(store), service.NewRouter(store, pool), service.NewUser(pool), service.NewProfile(pool), service.NewGenerate(pool, store))
+	app := NewApp(store, pool, service.NewAuth(store), service.NewRouter(store, pool), service.NewUser(pool), service.NewProfile(pool), service.NewGenerate(pool, store), nil)
 	app.SetDBPath(dbPath)
 	app.SetSecret("test-secret-key-32bytes-long!!")
 
@@ -88,7 +88,7 @@ func TestHandleBackupStreamsFile(t *testing.T) {
 
 	store := repository.NewStore()
 	pool := service.NewPool()
-	app := NewApp(store, pool, service.NewAuth(store), service.NewRouter(store, pool), service.NewUser(pool), service.NewProfile(pool), service.NewGenerate(pool, store))
+	app := NewApp(store, pool, service.NewAuth(store), service.NewRouter(store, pool), service.NewUser(pool), service.NewProfile(pool), service.NewGenerate(pool, store), nil)
 	app.SetDBPath(dbPath)
 
 	req := httptest.NewRequest(http.MethodGet, "/settings/backup", nil)

@@ -31,7 +31,7 @@ func setTestSetting(key, value string) error {
 func templateTestApp() *App {
 	store := repository.NewStore()
 	pool := service.NewPool()
-	app := NewApp(store, pool, nil, nil, nil, nil, nil)
+	app := NewApp(store, pool, nil, nil, nil, nil, nil, nil)
 	app.Template = service.NewTemplate(pool, store)
 	return app
 }

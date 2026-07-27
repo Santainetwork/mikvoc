@@ -35,7 +35,7 @@ func TestRenderPages(t *testing.T) {
 
 	store := repository.NewStore()
 	pool := service.NewPool()
-	app := NewApp(store, pool, service.NewAuth(store), service.NewRouter(store, pool), service.NewUser(pool), service.NewProfile(pool), service.NewGenerate(pool, store))
+	app := NewApp(store, pool, service.NewAuth(store), service.NewRouter(store, pool), service.NewUser(pool), service.NewProfile(pool), service.NewGenerate(pool, store), nil)
 	app.Template = service.NewTemplate(pool, store)
 	app.Stats = service.NewStats(pool)
 	app.Sales = service.NewSales(pool, store)

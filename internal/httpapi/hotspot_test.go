@@ -65,7 +65,7 @@ func TestParseUsersJSONPagination(t *testing.T) {
 
 func TestHandleUsersJSONUnavailable(t *testing.T) {
 	middleware.InitSession("test-secret-users-json")
-	app := NewApp(nil, nil, nil, nil, nil, nil, nil)
+	app := NewApp(nil, nil, nil, nil, nil, nil, nil, nil)
 	req := httptest.NewRequest(http.MethodGet, "/api/hotspot/users?limit=10&offset=0", nil)
 	rr := httptest.NewRecorder()
 	app.HandleUsersJSON(rr, req)

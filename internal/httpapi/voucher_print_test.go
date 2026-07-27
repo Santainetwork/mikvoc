@@ -85,7 +85,7 @@ func TestHandlePrintUsesActiveRouterTemplateAndMergedBranding(t *testing.T) {
 	}
 	t.Cleanup(pool.Clear)
 	store := repository.NewStore()
-	app := NewApp(store, pool, nil, nil, service.NewUser(pool), service.NewProfile(pool), nil)
+	app := NewApp(store, pool, nil, nil, service.NewUser(pool), service.NewProfile(pool), nil, nil)
 	app.Template = service.NewTemplate(pool, store)
 
 	tests := []struct {
@@ -140,7 +140,7 @@ func TestHandleQuickPrintUsesActiveRouterTemplateAndMergedBranding(t *testing.T)
 	}
 	t.Cleanup(pool.Clear)
 	store := repository.NewStore()
-	app := NewApp(store, pool, nil, nil, service.NewUser(pool), service.NewProfile(pool), nil)
+	app := NewApp(store, pool, nil, nil, service.NewUser(pool), service.NewProfile(pool), nil, nil)
 	app.Template = service.NewTemplate(pool, store)
 
 	req := voucherRequestForRouter(t, app, "/hotspot/users/quickprint?username=voucher-1", router.ID)

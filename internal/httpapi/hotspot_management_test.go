@@ -58,7 +58,7 @@ func TestServerProfileFormKeepsAllLoginMethods(t *testing.T) {
 func TestManagementRoutesAndSystemLogRole(t *testing.T) {
 	withTestDB(t)
 	middleware.InitSession("management-route-secret")
-	app := NewApp(nil, nil, nil, nil, nil, nil, nil)
+	app := NewApp(nil, nil, nil, nil, nil, nil, nil, nil)
 	router := mux.NewRouter()
 	app.RegisterRoutes(router)
 

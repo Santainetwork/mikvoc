@@ -15,6 +15,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"mikvoc/internal/assets"
 	"mikvoc/internal/core"
 	"mikvoc/internal/database"
 	"mikvoc/internal/env"
@@ -61,6 +62,7 @@ func main() {
 	middleware.InitSession(appSecret)
 
 	store := repository.NewStore()
+	assetStore := assets.New(*dbPath + ".assets")
 	pool := service.NewPool()
 	authSvc := service.NewAuth(store)
 	routerSvc := service.NewRouter(store, pool)
@@ -73,7 +75,7 @@ func main() {
 	pppSvc := service.NewPPP(pool)
 	routerManagementSvc := service.NewRouterManagement(pool)
 
-	app := httpapi.NewApp(store, pool, authSvc, routerSvc, userSvc, profileSvc, genSvc)
+	app := httpapi.NewApp(store, pool, authSvc, routerSvc, userSvc, profileSvc, genSvc, assetStore)
 	app.Sales = salesSvc
 	app.Stats = statsSvc
 	app.Template = templateSvc

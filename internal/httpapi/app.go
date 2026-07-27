@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"mikvoc/internal/assets"
 	"mikvoc/internal/core"
 	"mikvoc/internal/database"
 	"mikvoc/internal/middleware"
@@ -70,6 +71,7 @@ type App struct {
 	PPP              *service.PPPService
 	RouterManagement *service.RouterManagementService
 	Store            *repository.Store
+	Assets           *assets.Store
 	DBPath           string
 	Secret           string
 }
@@ -86,6 +88,7 @@ func NewApp(
 	users *service.UserService,
 	profiles *service.ProfileService,
 	gen *service.GenerateService,
+	assetStore *assets.Store,
 ) *App {
 	return &App{
 		tmplCache: make(map[string]*template.Template),
@@ -96,6 +99,7 @@ func NewApp(
 		Users:     users,
 		Profiles:  profiles,
 		Generate:  gen,
+		Assets:    assetStore,
 	}
 }
 
