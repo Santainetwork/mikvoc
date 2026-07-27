@@ -36,6 +36,13 @@ func (s *Store) Write(routerID int, kind Kind, r io.Reader, maxBytes int64) (Ass
 	if routerID < 0 || !validKind(kind) || maxBytes <= 0 {
 		return Asset{}, fmt.Errorf("invalid asset scope")
 	}
+	limit := int64(1 << 20)
+	if kind == Background {
+		limit = 5 << 20
+	}
+	if maxBytes > limit {
+		maxBytes = limit
+	}
 	data, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
 	if err != nil {
 		return Asset{}, err
@@ -138,14 +145,14 @@ func (s *Store) RemoveRouter(routerID int) error {
 	if err := s.rejectEntry(p); err != nil {
 		return err
 	}
-	if _, err := s.Walk(); err != nil {
-		return err
-	}
 	return os.RemoveAll(p)
 }
 
 func (s *Store) Walk() ([]Asset, error) {
 	var out []Asset
+	if err := s.rejectEntry(s.root); err != nil {
+		return nil, err
+	}
 	err := filepath.WalkDir(s.root, func(p string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -158,10 +165,13 @@ func (s *Store) Walk() ([]Asset, error) {
 		}
 		if d.IsDir() {
 			rel, _ := filepath.Rel(s.root, p)
-			if rel != "global" && rel != "routers" && !strings.HasPrefix(filepath.ToSlash(rel), "routers/") {
+			if rel != "global" && rel != "routers" && !(strings.HasPrefix(filepath.ToSlash(rel), "routers/") && strings.Count(filepath.ToSlash(rel), "/") == 1 && canonicalID(filepath.Base(rel))) {
 				return fmt.Errorf("unexpected asset directory")
 			}
 			return nil
+		}
+		if !d.Type().IsRegular() {
+			return fmt.Errorf("unexpected non-regular asset")
 		}
 		rel, _ := filepath.Rel(s.root, p)
 		parts := strings.Split(filepath.ToSlash(rel), "/")
@@ -177,6 +187,9 @@ func (s *Store) Walk() ([]Asset, error) {
 			}
 		} else {
 			if parts[0] != "routers" {
+				return fmt.Errorf("unexpected asset path")
+			}
+			if !canonicalID(parts[1]) {
 				return fmt.Errorf("unexpected asset path")
 			}
 			if _, err := fmt.Sscan(parts[1], &id); err != nil || id <= 0 {
@@ -203,8 +216,22 @@ func (s *Store) dir(id int) string {
 	return filepath.Join(s.root, "routers", fmt.Sprint(id))
 }
 func (s *Store) ensureDirs(dir string) error {
+	if err := checkAncestors(s.root); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
+	}
+	if err := checkAncestors(dir); err != nil {
+		return err
+	}
+	for p := dir; contained(s.root, p); p = filepath.Dir(p) {
+		if err := os.Chmod(p, 0700); err != nil {
+			return err
+		}
+		if p == s.root {
+			break
+		}
 	}
 	return nil
 }
@@ -241,14 +268,46 @@ func validate(b []byte) (string, error) {
 	if err != nil || (format != "png" && format != "jpeg" && format != "gif") {
 		return "", fmt.Errorf("invalid image")
 	}
-	if _, _, err := image.Decode(bytes.NewReader(b)); err != nil {
-		return "", fmt.Errorf("invalid image")
-	}
 	if cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width > 4096 || cfg.Height > 4096 || int64(cfg.Width)*int64(cfg.Height) > 16000000 {
 		return "", fmt.Errorf("image dimensions exceed limit")
+	}
+	if _, _, err := image.Decode(bytes.NewReader(b)); err != nil {
+		return "", fmt.Errorf("invalid image")
 	}
 	if format == "jpeg" {
 		return ".jpg", nil
 	}
 	return "." + format, nil
+}
+
+func checkAncestors(p string) error {
+	p, err := filepath.Abs(p)
+	if err != nil {
+		return err
+	}
+	for cur := p; ; cur = filepath.Dir(cur) {
+		st, err := os.Lstat(cur)
+		if err == nil && st.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("symlink ancestor")
+		}
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			return nil
+		}
+	}
+}
+
+func canonicalID(s string) bool {
+	if s == "0" || s == "" || (len(s) > 1 && s[0] == '0') {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }
