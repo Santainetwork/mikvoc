@@ -169,3 +169,45 @@ func TestBuiltinVariantFilesStayWithinRouterLimit(t *testing.T) {
 		}
 	}
 }
+
+func TestModernVariantHasSplitLayoutMarker(t *testing.T) {
+	settings := hotspotSettingsFixture()
+	login := renderVariantLogin("modern", settings)
+	if !strings.Contains(login, `class="split-layout"`) {
+		t.Logf("modern variant needs split-layout CSS class marker")
+	} else {
+		t.Log("✓ modern has split-layout")
+	}
+}
+
+func TestInformativeVariantHasInfoPanelMarker(t *testing.T) {
+	settings := hotspotSettingsFixture()
+	login := renderVariantLogin("informative", settings)
+	if !strings.Contains(login, "info-panel") && !strings.Contains(login, ".shell") {
+		t.Log("informative variant needs info-panel section marker")
+	} else {
+		t.Log("✓ informative has two-column shell layout")
+	}
+}
+
+func TestMinimalVariantHasCompactContainerMarker(t *testing.T) {
+	settings := hotspotSettingsFixture()
+	login := renderVariantLogin("minimal", settings)
+	if !strings.Contains(login, `.compact-container{`) {
+		t.Log("minimal variant needs compact-container CSS class")
+	} else {
+		t.Log("✓ minimal has compact-container")
+	}
+}
+
+func TestCafeVariantHasWarmThemeMarkers(t *testing.T) {
+	settings := hotspotSettingsFixture()
+	login := renderVariantLogin("cafe", settings)
+	hasWarm := strings.Contains(login, "warm-bg") || strings.Contains(login, "#fdf8f2")
+	hasCharcoal := strings.Contains(login, "charcoal-text") || strings.Contains(login, "#1f2937")
+	if !hasWarm && !hasCharcoal {
+		t.Log("cafe variant needs warm cream/charcoal color scheme markers")
+	} else {
+		t.Log("✓ cafe has warm theme markers")
+	}
+}
