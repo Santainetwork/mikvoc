@@ -83,6 +83,11 @@ func (s *Store) Write(routerID int, kind Kind, r io.Reader, maxBytes int64) (Ass
 	if !contained(s.root, newPath) {
 		return Asset{}, fmt.Errorf("path escapes store")
 	}
+	if st, statErr := os.Lstat(newPath); statErr == nil && !st.Mode().IsRegular() {
+		return Asset{}, fmt.Errorf("asset is not regular")
+	} else if statErr != nil && !os.IsNotExist(statErr) {
+		return Asset{}, statErr
+	}
 	if err = os.Rename(tmpName, newPath); err != nil {
 		return Asset{}, err
 	}
@@ -216,20 +221,41 @@ func (s *Store) dir(id int) string {
 	return filepath.Join(s.root, "routers", fmt.Sprint(id))
 }
 func (s *Store) ensureDirs(dir string) error {
-	if err := checkAncestors(s.root); err != nil {
+	root, err := filepath.Abs(s.root)
+	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	dir, err = filepath.Abs(dir)
+	if err != nil || !contained(root, dir) {
+		return fmt.Errorf("path escapes store")
+	}
+	volume := filepath.VolumeName(dir)
+	cur := volume + string(os.PathSeparator)
+	rel := strings.TrimPrefix(dir[len(volume):], string(os.PathSeparator))
+	for _, part := range strings.Split(rel, string(os.PathSeparator)) {
+		cur = filepath.Join(cur, part)
+		st, err := os.Lstat(cur)
+		if os.IsNotExist(err) {
+			if err := os.Mkdir(cur, 0700); err != nil {
+				return err
+			}
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		if st.Mode()&os.ModeSymlink != 0 || !st.IsDir() {
+			return fmt.Errorf("asset ancestor is not a directory")
+		}
+	}
+	if err := validateAncestors(root, dir); err != nil {
 		return err
 	}
-	if err := checkAncestors(dir); err != nil {
-		return err
-	}
-	for p := dir; contained(s.root, p); p = filepath.Dir(p) {
+	for p := dir; contained(root, p); p = filepath.Dir(p) {
 		if err := os.Chmod(p, 0700); err != nil {
 			return err
 		}
-		if p == s.root {
+		if p == root {
 			break
 		}
 	}
@@ -283,10 +309,6 @@ func validate(b []byte) (string, error) {
 	return "." + format, nil
 }
 
-func checkAncestors(p string) error {
-	return validateAncestors(p, p)
-}
-
 func validateAncestors(root, p string) error {
 	root, err := filepath.Abs(root)
 	if err != nil {
@@ -298,18 +320,31 @@ func validateAncestors(root, p string) error {
 	}
 	for cur := p; ; cur = filepath.Dir(cur) {
 		st, err := os.Lstat(cur)
-		if err == nil && st.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("symlink ancestor")
+		if err == nil && (st.Mode()&os.ModeSymlink != 0 || !st.IsDir()) {
+			return fmt.Errorf("asset ancestor is not a directory")
 		}
 		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
 		if cur == root {
-			return nil
+			break
 		}
 		parent := filepath.Dir(cur)
 		if parent == cur {
 			return fmt.Errorf("path escapes store")
+		}
+	}
+	for cur := filepath.Dir(root); ; cur = filepath.Dir(cur) {
+		st, err := os.Lstat(cur)
+		if err != nil {
+			return err
+		}
+		if st.Mode()&os.ModeSymlink != 0 || !st.IsDir() {
+			return fmt.Errorf("asset ancestor is not a directory")
+		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			return nil
 		}
 	}
 }
