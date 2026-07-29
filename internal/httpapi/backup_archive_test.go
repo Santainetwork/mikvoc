@@ -384,28 +384,6 @@ func TestRestoreRejectSymlinks(t *testing.T) {
 		Name:   "legitimate.txt",
 		Method: zip.Store,
 	}
-	w.WriteHeader(hdr)
-	w.Write([]byte("legit"))
-	
-	// Try to add symlink (will be stored as regular file in some cases)
-	hdr2 := &zip.FileHeader{
-		Name:       "symlink",
-		Method:     zip.Store,
-		Type:       zip.TypeDirectory,
-		ExtraField: []byte{0x65, 0x78}, // Just to simulate unusual entry
-	}
-	// Note: ZIP format doesn't properly support symlinks, we test traversal instead
-	
-	w.Close()
-
-	restoreDir := filepath.Join(tmpDir, "restore")
-	if err := os.MkdirAll(restoreDir, 0700); err != nil {
-		t.Fatalf("Failed to create restore dir: %v", err)
-	}
-
-	app := &App{}
-	err = app.RestoreFromZip(bytes.NewReader(zbuf.Bytes()), restoreDir, tmpDir)
-	if err == nil {
 		t.Logf("Restore allowed suspicious entry (may be acceptable if ZIP library sanitizes)")
 	} else if strings.Contains(err.Error(), "symlink") || strings.Contains(err.Error(), "traversal") || strings.Contains(err.Error(), "non-regular") {
 		t.Logf("Restore correctly rejected: %v", err)
@@ -430,7 +408,7 @@ func TestRestoreRejectTraversal(t *testing.T) {
 		Name:   "../../../etc/passwd",
 		Method: zip.Store,
 	}
-	w.WriteHeader(hdr)
+	w.CreateNew(hdr)
 	w.Write([]byte("evil"))
 	w.Close()
 
@@ -460,10 +438,10 @@ func TestRestoreRejectDuplicateNames(t *testing.T) {
 	zbuf := new(bytes.Buffer)
 	w := zip.NewWriter(zbuf)
 	
-	w.WriteHeader(&zip.FileHeader{Name: "file.txt", Method: zip.Store})
-	w.Write([]byte("content1"))
-	w.WriteHeader(&zip.FileHeader{Name: "FILE.TXT", Method: zip.Store})
-	w.Write([]byte("content2"))
+	w.CreateNew(&zip.FileHeader{Name: "file.txt", Method: zip.Store})
+	wr, _ := w.Create("file.txt"); wr.Write([]byte("content1"))
+	w.CreateNew(&zip.FileHeader{Name: "FILE.TXT", Method: zip.Store})
+	wr, _ := w.Create("FILE.TXT"); wr.Write([]byte("content2"))
 	w.Close()
 
 	restoreDir := filepath.Join(tmpDir, "restore")
@@ -498,7 +476,7 @@ func TestRestoreRejectNonRegularFiles(t *testing.T) {
 		Method: zip.Store,
 		Type:   zip.TypeDirectory,
 	}
-	w.WriteHeader(hdr)
+	w.CreateNew(hdr)
 	
 	// Regular file
 	hdr2 := &zip.FileHeader{
@@ -506,7 +484,7 @@ func TestRestoreRejectNonRegularFiles(t *testing.T) {
 		Method: zip.Store,
 		Type:   zip.TypeRegular,
 	}
-	w.WriteHeader(hdr2)
+	w.CreateNew(hdr2)
 	w.Write([]byte("ok"))
 	w.Close()
 
@@ -548,12 +526,12 @@ func TestRestoreExpandedSizeRejection(t *testing.T) {
 	zbuf := new(bytes.Buffer)
 	w := zip.NewWriter(zbuf)
 	
-	w.WriteHeader(&zip.FileHeader{Name: "manifest.json", Method: zip.Deflate})
+	w.CreateNew(&zip.FileHeader{Name: "manifest.json", Method: zip.Deflate})
 	w.Write(manifestJSON)
 	
 	// Large fake DB (much larger than declared)
 	largeContent := bytes.Repeat([]byte("x"), 10*1024*1024) // 10MB
-	w.WriteHeader(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Deflate, UncompressedSize64: 100})
+	w.CreateNew(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Deflate, UncompressedSize64: 100})
 	w.Write(largeContent)
 	w.Close()
 
@@ -593,7 +571,7 @@ func TestRestoreValidateEntryCount(t *testing.T) {
 
 	zbuf := new(bytes.Buffer)
 	w := zip.NewWriter(zbuf)
-	w.WriteHeader(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
 	w.Write(manifestJSON)
 	
 	// No actual DB file despite manifest claiming it exists
@@ -634,11 +612,11 @@ func TestRestoreVersionCheck(t *testing.T) {
 
 	zbuf := new(bytes.Buffer)
 	w := zip.NewWriter(zbuf)
-	w.WriteHeader(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
 	w.Write(manifestJSON)
 	
 	fakeDB := []byte("SQLite format 3\x00")
-	w.WriteHeader(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Store})
 	w.Write(fakeDB)
 	w.Close()
 
@@ -680,9 +658,9 @@ func TestRestoreSha256Validation(t *testing.T) {
 
 	zbuf := new(bytes.Buffer)
 	w := zip.NewWriter(zbuf)
-	w.WriteHeader(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
 	w.Write(manifestJSON)
-	w.WriteHeader(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Store})
 	w.Write(dbContent)
 	w.Close()
 
@@ -724,13 +702,13 @@ func TestRestoreAcceptedManagedAssetPathsOnly(t *testing.T) {
 
 	zbuf := new(bytes.Buffer)
 	w := zip.NewWriter(zbuf)
-	w.WriteHeader(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
 	w.Write(manifestJSON)
-	w.WriteHeader(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Store})
 	w.Write([]byte("SQLite 3"))
-	w.WriteHeader(&zip.FileHeader{Name: "global/background.jpg", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "global/background.jpg", Method: zip.Store})
 	w.Write([]byte("bg"))
-	w.WriteHeader(&zip.FileHeader{Name: "routers/456/logo.png", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "routers/456/logo.png", Method: zip.Store})
 	w.Write([]byte("logo"))
 	w.Close()
 
@@ -776,11 +754,11 @@ func TestRestoreRejectedUnmanagedPaths(t *testing.T) {
 
 	zbuf := new(bytes.Buffer)
 	w := zip.NewWriter(zbuf)
-	w.WriteHeader(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
 	w.Write(manifestJSON)
-	w.WriteHeader(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Store})
 	w.Write([]byte("SQLite 3"))
-	w.WriteHeader(&zip.FileHeader{Name: "../etc/passwd", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "../etc/passwd", Method: zip.Store})
 	w.Write([]byte("evil"))
 	w.Close()
 
@@ -831,9 +809,9 @@ func TestRestoreRollbackOnFailure(t *testing.T) {
 
 	zbuf := new(bytes.Buffer)
 	w := zip.NewWriter(zbuf)
-	w.WriteHeader(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
 	w.Write(manifestJSON)
-	w.WriteHeader(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Store})
 	w.Write([]byte("bad data"))
 	w.Close()
 
@@ -926,9 +904,9 @@ func TestRollbackDBAndAssetsTogether(t *testing.T) {
 
 	zbuf := new(bytes.Buffer)
 	w := zip.NewWriter(zbuf)
-	w.WriteHeader(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "manifest.json", Method: zip.Store})
 	w.Write(manifestJSON)
-	w.WriteHeader(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Store})
+	w.CreateNew(&zip.FileHeader{Name: "mikvoc.db", Method: zip.Store})
 	w.Write([]byte("bad"))
 	w.Close()
 
