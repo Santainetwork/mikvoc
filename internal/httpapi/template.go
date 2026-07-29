@@ -23,6 +23,7 @@ var (
 )
 
 const maxLogoUploadBytes = 512 * 1024
+const maxBackgroundUploadBytes = 5 * 1024 * 1024 // 5 MiB
 const maxTemplateRequestBytes = middleware.TemplateUploadMaxBytes
 const previewAssetCSP = "sandbox allow-scripts allow-forms; default-src 'none'; style-src 'unsafe-inline' http: https:; script-src 'unsafe-inline' http: https:; img-src data: blob: http: https:; font-src data: http: https:; form-action 'none'"
 

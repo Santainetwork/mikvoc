@@ -111,6 +111,9 @@ func (a *App) RegisterRoutes(r *mux.Router) {
 	ownerOnly.HandleFunc("/delete", a.HandleAdminDelete).Methods(http.MethodPost)
 
 	protected.HandleFunc("/template", a.HandleTemplateEditor).Methods(http.MethodGet, http.MethodPost)
+	protected.HandleFunc("/template/logo-upload", a.HandleLogoUpload).Methods(http.MethodPost)
+	protected.HandleFunc("/template/background-upload", a.HandleBackgroundUpload).Methods(http.MethodPost)
+	protected.HandleFunc("/template/focal", a.HandleFocalPosition).Methods(http.MethodPost)
 	protected.HandleFunc("/template/download", a.HandleTemplateDownload).Methods(http.MethodGet)
 	protected.HandleFunc("/template/voucher-template", a.HandleSetVoucherTemplate).Methods(http.MethodPost)
 	protected.HandleFunc("/template/preview/assets/{path:.*}", a.HandleTemplatePreviewAsset).Methods(http.MethodGet)

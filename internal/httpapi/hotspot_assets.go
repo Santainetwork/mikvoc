@@ -141,3 +141,13 @@ func validateAssetZip(raw []byte) (templateFileSet, error) {
 	}
 	return result, nil
 }
+
+func clampInt(v, min, max int) int {
+	if v < min {
+		return min
+	}
+	if v > max {
+		return max
+	}
+	return v
+}
