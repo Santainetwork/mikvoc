@@ -32,6 +32,8 @@ type Store struct{ root string }
 
 func New(root string) *Store { return &Store{root: filepath.Clean(root)} }
 
+func (s *Store) Root() string { return s.root }
+
 func (s *Store) Write(routerID int, kind Kind, r io.Reader, maxBytes int64) (Asset, error) {
 	if routerID < 0 || !validKind(kind) || maxBytes <= 0 {
 		return Asset{}, fmt.Errorf("invalid asset scope")

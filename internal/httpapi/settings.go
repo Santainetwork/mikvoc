@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"mikvoc/internal/authn"
 	"mikvoc/internal/core"
@@ -138,6 +140,15 @@ func (a *App) HandleSettings(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				a.setFlash(w, r, "Gagal hapus router: "+err.Error())
 				break
+			}
+			// Clean router assets directory AFTER successful DB delete
+			if a.Assets != nil && a.Assets.Root() != "" {
+				routerAssetDir := filepath.Join(a.Assets.Root(), "routers", fmt.Sprintf("%d", id))
+				if _, statErr := os.Stat(routerAssetDir); statErr == nil {
+					if cleanupErr := os.RemoveAll(routerAssetDir); cleanupErr != nil {
+						log.Printf("[settings] failed to remove router assets for ID %d: %v", id, cleanupErr)
+					}
+				}
 			}
 			a.InvalidateRoutersCache()
 			if sessionRouterID(r) == id {
