@@ -29,9 +29,12 @@ const previewAssetCSP = "sandbox allow-scripts allow-forms; default-src 'none'; 
 
 var templateSettingKeys = []string{
 	"tpl_app_name", "tpl_subtitle", "tpl_bg_color", "tpl_primary_color",
+
+	// Add background and focal point settings
 	"tpl_logo_text", "tpl_show_info", "tpl_btn_label", "tpl_login_mode",
 	"tpl_redirect_url", "tpl_dns_name", "tpl_variant", "tpl_info_html",
 	"tpl_custom_login_html", "tpl_custom_status_html", "tpl_custom_logout_html",
+	"tpl_bg_image", "tpl_focal_x", "tpl_focal_y",
 }
 
 type TemplateEditorData struct {

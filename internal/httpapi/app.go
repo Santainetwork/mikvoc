@@ -192,6 +192,8 @@ func templateFuncs() template.FuncMap {
 		"formatBytes":    routeros.FormatBytes,
 		"formatDuration": routeros.FormatDuration,
 		"add":            func(a, b int) int { return a + b },
+		"hasPrefix":      strings.HasPrefix,
+		"substr":         func(s string, start, length int) string { if len(s) > 0 && start >= 0 && length > 0 { end := start + length; if end > len(s) { end = len(s) }; return s[start:end] } else { return "" }},
 		"parseI64": func(s string) int64 {
 			var v int64
 			fmt.Sscanf(s, "%d", &v)

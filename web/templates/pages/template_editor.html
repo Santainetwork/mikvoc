@@ -189,6 +189,146 @@
       </form>
     </div>
 
+    <!-- Visual Assets (Background Image) -->
+    <div class="card">
+      <div class="flex items-center gap-2 px-6 py-4 border-b border-border">
+        <span class="material-symbols-outlined text-primary text-[18px]">wallpaper</span>
+        <h3 class="text-sm font-semibold text-foreground">Background & Aset Visual</h3>
+      </div>
+      <form method="POST" action="/template/background-upload" id="tpl-form-background" enctype="multipart/form-data" class="p-6 space-y-4">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Background upload -->
+          <div class="space-y-2">
+            <label for="background-upload-input" class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Upload Background</label>
+            <input type="file" name="background" id="background-upload-input" accept="image/gif,image/png,image/jpeg"
+              class="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-primary/90"/>
+            <p class="text-xs text-muted-foreground">Format GIF/PNG/JPEG, maksimal 5 MiB.</p>
+          </div>
+          
+          <!-- Background preview thumbnail -->
+          <div class="space-y-2">
+            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Preview Background</label>
+            <div id="bg-preview-thumbnail" class="h-32 rounded-lg border border-border overflow-hidden bg-muted flex items-center justify-center">
+              {{if index .Settings "tpl_bg_image"}}
+              {{$bgImage := index .Settings "tpl_bg_image"}}
+              {{if hasPrefix $bgImage "local/"}}
+              <img src="/template/assets/global/background.png" alt="Background" class="w-full h-full object-cover">
+              {{else if hasPrefix $bgImage "http"}}
+              <img src="{{$bgImage}}" alt="Background" class="w-full h-full object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <span class="hidden text-xs text-warning absolute">Gagal memuat URL eksternal</span>
+              {{end}}
+              {{else}}
+              <span class="text-xs text-muted-foreground">Tidak ada background</span>
+              {{end}}
+            </div>
+            
+            <!-- Source type indicator -->
+            <div class="flex flex-wrap gap-2 mt-2">
+              {{if index .Settings "tpl_bg_image"}}
+              {{$bgImage := index .Settings "tpl_bg_image"}}
+              {{if hasPrefix $bgImage "local/"}}
+              <span class="badge badge-secondary text-xs">
+                <span class="material-symbols-outlined text-[14px]">cloud_upload</span>
+                Upload Lokal
+              </span>
+              <span class="text-xs text-muted-foreground">{{substr 6 (len $bgImage) -1 | printf "...%s"}}</span>
+              <button type="button" onclick="document.getElementById('remove-bg-local').click()" 
+                class="text-xs text-destructive hover:text-destructive/80 underline">
+                Hapus
+              </button>
+              {{else if hasPrefix $bgImage "http"}}
+              <span class="badge badge-outline text-xs">
+                <span class="material-symbols-outlined text-[14px]">link</span>
+                URL Eksternal
+              </span>
+              <span class="text-xs text-muted-foreground truncate max-w-[150px]" title="{{$bgImage}}">{{$bgImage}}</span>
+              <button type="button" onclick="document.getElementById('remove-bg-url').click()" 
+                class="text-xs text-destructive hover:text-destructive/80 underline">
+                Hapus
+              </button>
+              {{end}}
+              <label class="flex items-center gap-1.5 text-xs cursor-pointer select-none">
+                <input type="checkbox" {{if not (index .Settings "tpl_bg_image")}}checked{{end}} 
+                  class="rounded text-primary focus:ring-ring bg-muted border-input">
+                Fallback ke default
+              </label>
+              {{else}}
+              <span class="badge badge-outline text-xs">
+                <span class="material-symbols-outlined text-[14px]">image_not_supported</span>
+                Kosong
+              </span>
+              <label class="flex items-center gap-1.5 text-xs cursor-pointer select-none">
+                <input type="checkbox" checked 
+                  class="rounded text-primary focus:ring-ring bg-muted border-input">
+                Gunakan default
+              </label>
+              {{end}}
+            </div>
+          </div>
+        </div>
+
+        <!-- Remove background controls (hidden) -->
+        <input type="hidden" id="remove-bg-local" name="remove_bg_local" value="">
+        <input type="hidden" id="remove-bg-url" name="remove_bg_url" value="">
+
+        <!-- Focal Point Controls -->
+        <div class="border-t border-border pt-4 space-y-3">
+          <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Focal Point Position (X/Y)</label>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="focalX-input" class="block text-xs text-muted-foreground mb-1">Sumbu X (0-100)</label>
+              <input type="number" name="focalX" id="focalX-input" min="0" max="100" step="1" value="{{index .Settings "tpl_focal_x"}}" 
+                class="w-full bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                title="Posisi focal point horizontal (0=kiri, 100=kanan)">
+            </div>
+            <div>
+              <label for="focalY-input" class="block text-xs text-muted-foreground mb-1">Sumbu Y (0-100)</label>
+              <input type="number" name="focalY" id="focalY-input" min="0" max="100" step="1" value="{{index .Settings "tpl_focal_y"}}" 
+                class="w-full bg-muted border border-input text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                title="Posisi focal point vertikal (0=atas, 100=bawah)">
+            </div>
+          </div>
+          <p class="text-xs text-muted-foreground">
+            <span class="badge badge-outline">Range 0..100</span>
+            Menentukan titik fokus background dengan <code>object-position</code>.
+          </p>
+        </div>
+
+        <!-- Source badges -->
+        <div class="border-t border-border pt-3 flex flex-wrap gap-2 text-xs">
+          {{if index .Settings "tpl_bg_image"}}
+          {{$bgImage := index .Settings "tpl_bg_image"}}
+          <div class="flex items-center gap-1">
+            <span class="badge badge-secondary text-xs">Upload</span>
+            <span class="text-muted-foreground">Aset lokal dari upload</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="badge badge-outline text-xs">URL Global</span>
+            <span class="text-muted-foreground">Fallback ke URL global (jika aset tidak ditemukan)</span>
+          </div>
+          {{else}}
+          <div class="flex items-center gap-1">
+            <span class="badge badge-outline text-xs">Default</span>
+            <span class="text-muted-foreground">Tidak ada background kustom</span>
+          </div>
+          {{end}}
+        </div>
+
+        <!-- ZIP guidance warning -->
+        <div class="bg-info/10 border border-info/30 rounded-lg p-3 text-xs text-info mt-4">
+          <p class="font-semibold mb-1"><span class="material-symbols-outlined text-[16px] align-text-bottom">description</span>Panduan Paket ZIP Aset:</p>
+          <ul class="list-disc list-inside space-y-0.5 text-muted-foreground">
+            <li>Preview ZIP terjadi di klien browser — validasi server menentukan kebenaran</li>
+            <li>Ukuran maksimal 2 MiB saat upload</li>
+            <li>Server akan memeriksa struktur ZIP saat simpan/push ke Mikrotik</li>
+            <li>Kelipatan nama file dianggap case-insensitive oleh Mikrotik</li>
+            <li>Nama file harus mengikuti skema standar MikVoc untuk kompatibilitas</li>
+          </ul>
+        </div>
+      </form>
+    </div>
+
     <!-- Warna & Tampilan -->
     <div class="card">
       <div class="flex items-center gap-2 px-6 py-4 border-b border-border">

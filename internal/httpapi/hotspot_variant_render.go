@@ -13,6 +13,9 @@ type hotspotView struct {
 	Primary   string
 	Bg        string
 	LogoHTML  string
+	BgImage   string
+	FocalX    string
+	FocalY    string
 	InfoHTML  string
 	FormHTML  string
 	ClientRow string
@@ -53,6 +56,18 @@ func hotspotViewFrom(settings map[string]string) hotspotView {
 		clientRow = `<div class="client">IP: $(ip) &bull; MAC: $(mac)</div>`
 	}
 
+	bgImage := get("tpl_bg_image", "")
+	// Resolve managed asset path if it starts with "local/"
+	if strings.HasPrefix(bgImage, "local/") {
+		ext := ".gif"
+		if strings.HasSuffix(bgImage, ".png") {
+			ext = ".png"
+		} else if strings.HasSuffix(bgImage, ".jpg") || strings.HasSuffix(bgImage, ".jpeg") {
+			ext = ".jpg"
+		}
+		bgImage = "/template/assets/global/background" + ext
+	}
+
 	return hotspotView{
 		AppName:   escape(get("tpl_app_name", "Hotspot Login")),
 		Subtitle:  escape(get("tpl_subtitle", "Masukkan username dan password untuk akses internet")),
@@ -60,6 +75,9 @@ func hotspotViewFrom(settings map[string]string) hotspotView {
 		Primary:   normalizeHotspotColor(get("tpl_primary_color", "#4f46e5"), "#4f46e5"),
 		Bg:        normalizeHotspotColor(get("tpl_bg_color", "#f1f5f9"), "#f1f5f9"),
 		LogoHTML:  logo,
+		BgImage:   bgImage,
+		FocalX:    get("tpl_focal_x", "50"),
+		FocalY:    get("tpl_focal_y", "50"),
 		InfoHTML:  settings["tpl_info_html"],
 		FormHTML:  hotspotFormFields(get("tpl_login_mode", "both")),
 		ClientRow: clientRow,
@@ -99,27 +117,57 @@ func loginForm(v hotspotView) string {
 }
 
 func renderModernLogin(v hotspotView) string {
-	return fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s</title><style>:root{--p:%s;--b:%s}*{box-sizing:border-box}body{margin:0;background:var(--b);font:16px system-ui;display:grid;place-items:center;min-height:100vh}.card{background:#fff;width:min(390px,92%%);padding:32px;border-radius:20px;box-shadow:0 18px 45px #0002;text-align:center}.logo{width:64px;height:64px;margin:auto;display:grid;place-items:center;background:var(--p);color:#fff;border-radius:50%%;font-weight:800;overflow:hidden}.logo img{width:100%%;height:100%%;object-fit:contain}h1{margin:18px 0 4px}p,.client{color:#64748b;font-size:13px}label{display:block;text-align:left;margin:14px 0;font-size:13px}input{display:block;width:100%%;padding:12px;margin-top:5px;border:1px solid #cbd5e1;border-radius:8px}button{width:100%%;padding:13px;border:0;border-radius:8px;background:var(--p);color:#fff;font-weight:700}.error{color:#dc2626}</style></head><body><main class="card"><div class="logo">%s</div><h1>%s</h1><p>%s</p>%s</main>%s</body></html>`, v.AppName, v.Primary, v.Bg, v.LogoHTML, v.AppName, v.Subtitle, loginForm(v), hotspotLoginScript)
+	bgStyle := "background:" + v.Bg
+	if v.BgImage != "" {
+		bgStyle = fmt.Sprintf(`background:url("%s") center/cover no-repeat;object-position:%s%% %s%%`, 
+			v.BgImage, v.FocalX, v.FocalY)
+	}
+	return fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s</title><style>:root{--p:%s;--b:%s}*{box-sizing:border-box}body{margin:0;background:var(--b);font:16px system-ui;display:grid;place-items:center;min-height:100vh}.card{background:#fff;width:min(390px,92%%);padding:32px;border-radius:20px;box-shadow:0 18px 45px #0002;text-align:center}.logo{width:64px;height:64px;margin:auto;display:grid;place-items:center;background:var(--p);color:#fff;border-radius:50%%;font-weight:800;overflow:hidden}.logo img{width:100%%;height:100%%;object-fit:contain}h1{margin:18px 0 4px}p,.client{color:#64748b;font-size:13px}label{display:block;text-align:left;margin:14px 0;font-size:13px}input{display:block;width:100%%;padding:12px;margin-top:5px;border:1px solid #cbd5e1;border-radius:8px}button{width:100%%;padding:13px;border:0;border-radius:8px;background:var(--p);color:#fff;font-weight:700}.error{color:#dc2626}</style></head><body style="%s"><main class="card"><div class="logo">%s</div><h1>%s</h1><p>%s</p>%s</main>%s</body></html>`, v.AppName, v.Primary, v.Bg, bgStyle, v.LogoHTML, v.AppName, v.Subtitle, loginForm(v), hotspotLoginScript)
 }
 
 func renderInformativeLogin(v hotspotView) string {
-	return fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s</title><style>:root{--p:%s;--b:%s}*{box-sizing:border-box}body{margin:0;background:var(--b);font:16px system-ui;display:grid;place-items:center;min-height:100vh}.shell{display:grid;grid-template-columns:1fr 1fr;width:min(820px,94%%);background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 20px 50px #0002}.pkg,.login{padding:34px}.pkg{background:var(--p);color:#fff}.logo img{max-width:64px;max-height:64px}label{display:block;margin:13px 0;font-size:13px}input{display:block;width:100%%;padding:11px;margin-top:4px}button{width:100%%;padding:12px;background:var(--p);color:#fff;border:0}.client,.error{font-size:12px}.error{color:#c00}@media(max-width:650px){.shell{grid-template-columns:1fr}.pkg{padding:22px}}</style></head><body><main class="shell"><section class="pkg"><div class="logo">%s</div><h2>%s</h2>%s</section><section class="login"><h1>%s</h1><p>%s</p>%s</section></main>%s</body></html>`, v.AppName, v.Primary, v.Bg, v.LogoHTML, v.AppName, v.InfoHTML, v.AppName, v.Subtitle, loginForm(v), hotspotLoginScript)
+	bgStyle := "background:" + v.Bg
+	if v.BgImage != "" {
+		bgStyle = fmt.Sprintf(`background:url("%s") center/cover no-repeat;object-position:%s%% %s%%`, 
+			v.BgImage, v.FocalX, v.FocalY)
+	}
+	return fmt.Sprintf(`<<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s</title><style>:root{--p:%s;--b:%s}*{box-sizing:border-box}body{margin:0;background:var(--b);font:16px system-ui;display:grid;place-items:center;min-height:100vh}.shell{display:grid;grid-template-columns:1fr 1fr;width:min(820px,94%%);background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 20px 50px #0002}.pkg,.login{padding:34px}.pkg{background:var(--p);color:#fff}.logo img{max-width:64px;max-height:64px}label{display:block;margin:13px 0;font-size:13px}input{display:block;width:100%%;padding:11px;margin-top:4px}button{width:100%%;padding:12px;background:var(--p);color:#fff;border:0}.client,.error{font-size:12px}.error{color:#c00}@media(max-width:650px){.shell{grid-template-columns:1fr}.pkg{padding:22px}}</style></head><body style="%s"><main class="shell"><section class="pkg"><div class="logo">%s</div><h2>%s</h2>%s</section><section class="login"><h1>%s</h1><p>%s</p>%s</section></main>%s</body></html>`, bgStyle, v.AppName, v.Primary, bgStyle, v.LogoHTML, v.AppName, v.InfoHTML, v.AppName, v.Subtitle, loginForm(v), hotspotLoginScript)
 }
 
 func renderMinimalLogin(v hotspotView) string {
-	return fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s</title><style>body{max-width:340px;margin:48px auto;padding:16px;background:%s;color:#111;font:16px Arial,sans-serif}.logo img{max-width:52px;max-height:52px}label{display:block;margin:12px 0}input,button{box-sizing:border-box;width:100%%;padding:11px}button{background:%s;color:#fff;border:0}.client{font-size:12px}.error{color:#b00}</style></head><body><div class="logo">%s</div><h1>%s</h1><p>%s</p>%s%s</body></html>`, v.AppName, v.Bg, v.Primary, v.LogoHTML, v.AppName, v.Subtitle, loginForm(v), hotspotLoginScript)
+	bgStyle := "background:" + v.Bg
+	if v.BgImage != "" {
+		bgStyle = fmt.Sprintf(`background:url("%s") center/cover no-repeat;object-position:%s%% %s%%`, 
+			v.BgImage, v.FocalX, v.FocalY)
+	}
+	return fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s</title><style>body{max-width:340px;margin:48px auto;padding:16px;background:%s;color:#111;font:16px Arial,sans-serif}.logo img{max-width:52px;max-height:52px}label{display:block;margin:12px 0}input,button{box-sizing:border-box;width:100%%;padding:11px}button{background:%s;color:#fff;border:0}.client{font-size:12px}.error{color:#b00}</style></head><body style="%s"><div class="logo">%s</div><h1>%s</h1><p>%s</p>%s%s</body></html>`, v.AppName, bgStyle, v.Primary, bgStyle, v.LogoHTML, v.AppName, v.Subtitle, loginForm(v), hotspotLoginScript)
 }
 
 func renderCafeLogin(v hotspotView) string {
-	return fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s</title><style>:root{--neon:%s}*{box-sizing:border-box}body{margin:0;background:#080b12;color:#e5e7eb;font:16px system-ui;display:grid;place-items:center;min-height:100vh}.arena{width:min(420px,92%%);padding:34px;background:#111827;border:1px solid var(--neon);box-shadow:0 0 28px var(--neon)}.logo{color:var(--neon);font-size:24px;font-weight:900}.logo img{max-width:70px;max-height:70px}label{display:block;margin:14px 0;color:#9ca3af}input{display:block;width:100%%;padding:12px;margin-top:5px;background:#030712;color:#fff;border:1px solid #374151}button{width:100%%;padding:13px;background:var(--neon);border:0;font-weight:900}.client{font-size:12px;color:#9ca3af}.error{color:#fb7185}</style></head><body><main class="arena"><div class="logo">%s</div><h1>%s</h1><p>%s</p>%s</main>%s</body></html>`, v.AppName, v.Primary, v.LogoHTML, v.AppName, v.Subtitle, loginForm(v), hotspotLoginScript)
+	bgStyle := "background:" + v.Bg
+	if v.BgImage != "" {
+		bgStyle = fmt.Sprintf(`background:url("%s") center/cover no-repeat;object-position:%s%% %s%%`, 
+			v.BgImage, v.FocalX, v.FocalY)
+	}
+	return fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s</title><style>:root{--neon:%s}*{box-sizing:border-box}body{margin:0;background:#080b12;color:#e5e7eb;font:16px system-ui;display:grid;place-items:center;min-height:100vh}.arena{width:min(420px,92%%);padding:34px;background:#111827;border:1px solid var(--neon);box-shadow:0 0 28px var(--neon)}.logo{color:var(--neon);font-size:24px;font-weight:900}.logo img{max-width:70px;max-height:70px}label{display:block;margin:14px 0;color:#9ca3af}input{display:block;width:100%%;padding:12px;margin-top:5px;background:#030712;color:#fff;border:1px solid #374151}button{width:100%%;padding:13px;background:var(--neon);border:0;font-weight:900}.client{font-size:12px;color:#9ca3af}.error{color:#fb7185}</style></head><body style="%s"><main class="arena"><div class="logo">%s</div><h1>%s</h1><p>%s</p>%s</main>%s</body></html>`, v.AppName, v.Primary, bgStyle, v.LogoHTML, v.AppName, v.Subtitle, loginForm(v), hotspotLoginScript)
 }
 
 func renderHotspotStatus(v hotspotView) string {
-	return fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s - Online</title>$(if refresh-timeout)<meta http-equiv="refresh" content="$(refresh-timeout-secs)">$(endif)<style>body{background:%s;font:16px system-ui;display:grid;place-items:center;min-height:100vh}.card{background:#fff;padding:30px;border-radius:16px}button{background:%s;color:#fff;border:0;padding:12px;width:100%%}</style></head><body><main class="card"><h1>$(username)</h1><p>IP: $(ip)</p><p>MAC: $(mac)</p><p>Upload / Download: $(bytes-in-nice) / $(bytes-out-nice)</p><p>Online: $(uptime)</p>$(if session-time-left)<p>Sisa waktu: $(session-time-left)</p>$(endif)$(if login-by == 'mac')<p>Login via MAC</p>$(else)<form action="$(link-logout)"><button>Logout</button></form>$(endif)</main></body></html>`, v.AppName, v.Bg, v.Primary)
+	bgStyle := "background:" + v.Bg
+	if v.BgImage != "" {
+		bgStyle = fmt.Sprintf(`background:url("%s") center/cover no-repeat;object-position:%s%% %s%%`, 
+			v.BgImage, v.FocalX, v.FocalY)
+	}
+	return fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s - Online</title>$(if refresh-timeout)<meta http-equiv="refresh" content="$(refresh-timeout-secs)">$(endif)<style>body{background:%s;font:16px system-ui;display:grid;place-items:center;min-height:100vh}.card{background:#fff;padding:30px;border-radius:16px}button{background:%s;color:#fff;border:0;padding:12px;width:100%%}</style></head><body style="%s"><main class="card"><h1>$(username)</h1><p>IP: $(ip)</p><p>MAC: $(mac)</p><p>Upload / Download: $(bytes-in-nice) / $(bytes-out-nice)</p><p>Online: $(uptime)</p>$(if session-time-left)<p>Sisa waktu: $(session-time-left)</p>$(endif)$(if login-by == 'mac')<p>Login via MAC</p>$(else)<form action="$(link-logout)"><button>Logout</button></form>$(endif)</main></body></html>`, v.AppName, bgStyle, v.Primary, bgStyle)
 }
 
 func renderHotspotLogout(v hotspotView) string {
-	return fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Logged Out</title><style>body{background:%s;font:16px system-ui;display:grid;place-items:center;min-height:100vh}.card{background:#fff;padding:30px;border-radius:16px}a{display:block;background:%s;color:#fff;padding:12px;text-align:center;text-decoration:none}</style></head><body><main class="card"><h1>Sesi Berakhir</h1><p>Terima kasih, <strong>$(username)</strong></p><p>Total online: $(uptime)</p><p>Data: $(bytes-in-nice) / $(bytes-out-nice)</p><a href="$(link-login)">Login Kembali</a></main></body></html>`, v.Bg, v.Primary)
+	bgStyle := "background:" + v.Bg
+	if v.BgImage != "" {
+		bgStyle = fmt.Sprintf(`background:url("%s") center/cover no-repeat;object-position:%s%% %s%%`, 
+			v.BgImage, v.FocalX, v.FocalY)
+	}
+	return fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Logged Out</title><style>body{background:%s;font:16px system-ui;display:grid;place-items:center;min-height:100vh}.card{background:#fff;padding:30px;border-radius:16px}a{display:block;background:%s;color:#fff;padding:12px;text-align:center;text-decoration:none}</style></head><body style="%s"><main class="card"><h1>Sesi Berakhir</h1><p>Terima kasih, <strong>$(username)</strong></p><p>Total online: $(uptime)</p><p>Data: $(bytes-in-nice) / $(bytes-out-nice)</p><a href="$(link-login)">Login Kembali</a></main></body></html>`, bgStyle, v.Primary, bgStyle)
 }
 
 func customHotspotHTMLFor(settings map[string]string) (string, string, string) {

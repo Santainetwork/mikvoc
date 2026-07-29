@@ -24,6 +24,7 @@ func TestTemplateSettingKeysComplete(t *testing.T) {
 		"tpl_logo_text", "tpl_show_info", "tpl_btn_label", "tpl_login_mode",
 		"tpl_redirect_url", "tpl_dns_name", "tpl_variant", "tpl_info_html",
 		"tpl_custom_login_html", "tpl_custom_status_html", "tpl_custom_logout_html",
+		"tpl_bg_image", "tpl_focal_x", "tpl_focal_y",
 	}
 	if strings.Join(templateSettingKeys, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("templateSettingKeys = %q, want %q", templateSettingKeys, want)
