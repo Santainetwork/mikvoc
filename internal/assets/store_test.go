@@ -226,6 +226,147 @@ func TestStoreRejectsAncestorSymlinkForReadAndRemoval(t *testing.T) {
 	}
 }
 
+func TestStoreOperationsRejectExistingAncestorSymlink(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "assets")
+	outside := t.TempDir()
+	outsideRouter := filepath.Join(outside, "9")
+	if err := os.MkdirAll(outsideRouter, 0700); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(outsideRouter, "logo.png")
+	original := largePNG(t, 2, 2)
+	if err := os.WriteFile(sentinel, original, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(root, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "routers")); err != nil {
+		t.Fatal(err)
+	}
+
+	s := New(root)
+	if _, err := s.Write(9, Logo, bytes.NewReader(largePNG(t, 3, 3)), 1<<20); err == nil {
+		t.Fatal("write followed existing ancestor symlink")
+	}
+	if _, err := s.Read(9, Logo); err == nil {
+		t.Fatal("read followed existing ancestor symlink")
+	}
+	if err := s.Remove(9, Logo); err == nil {
+		t.Fatal("remove followed existing ancestor symlink")
+	}
+	if err := s.RemoveRouter(9); err == nil {
+		t.Fatal("router removal followed existing ancestor symlink")
+	}
+	if _, err := s.Walk(); err == nil {
+		t.Fatal("walk accepted existing ancestor symlink")
+	}
+	got, err := os.ReadFile(sentinel)
+	if err != nil || !bytes.Equal(got, original) {
+		t.Fatalf("outside sentinel changed: %v", err)
+	}
+}
+
+func TestStoreWriteDoesNotCreateThroughExistingAncestorSymlink(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "assets")
+	outside := t.TempDir()
+	sentinel := filepath.Join(outside, "sentinel")
+	if err := os.WriteFile(sentinel, []byte("keep"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(root, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "routers")); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := New(root).Write(9, Logo, bytes.NewReader(largePNG(t, 2, 2)), 1<<20); err == nil {
+		t.Fatal("write followed existing ancestor symlink")
+	}
+	if _, err := os.Lstat(filepath.Join(outside, "9")); !os.IsNotExist(err) {
+		t.Fatalf("outside directory created through symlink: %v", err)
+	}
+	got, err := os.ReadFile(sentinel)
+	if err != nil || string(got) != "keep" {
+		t.Fatalf("outside sentinel changed: %q, %v", got, err)
+	}
+}
+
+func TestStoreOperationsRejectConfiguredRootThroughSymlink(t *testing.T) {
+	parent := t.TempDir()
+	outside := t.TempDir()
+	root := filepath.Join(parent, "link", "assets")
+	outsideRoot := filepath.Join(outside, "assets")
+	outsideRouter := filepath.Join(outsideRoot, "routers", "9")
+	if err := os.MkdirAll(outsideRouter, 0700); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(outsideRouter, "logo.png")
+	original := largePNG(t, 2, 2)
+	if err := os.WriteFile(sentinel, original, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(parent, "link")); err != nil {
+		t.Fatal(err)
+	}
+
+	s := New(root)
+	if _, err := s.Write(9, Logo, bytes.NewReader(largePNG(t, 3, 3)), 1<<20); err == nil {
+		t.Fatal("write accepted configured root through symlink")
+	}
+	if _, err := s.Read(9, Logo); err == nil {
+		t.Fatal("read accepted configured root through symlink")
+	}
+	if err := s.Remove(9, Logo); err == nil {
+		t.Fatal("remove accepted configured root through symlink")
+	}
+	if err := s.RemoveRouter(9); err == nil {
+		t.Fatal("router removal accepted configured root through symlink")
+	}
+	if _, err := s.Walk(); err == nil {
+		t.Fatal("walk accepted configured root through symlink")
+	}
+	got, err := os.ReadFile(sentinel)
+	if err != nil || !bytes.Equal(got, original) {
+		t.Fatalf("outside sentinel changed: %v", err)
+	}
+}
+
+func TestStoreOperationsRejectExistingFileSymlink(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "assets")
+	dir := filepath.Join(root, "routers", "9")
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(t.TempDir(), "outside.png")
+	original := largePNG(t, 2, 2)
+	if err := os.WriteFile(sentinel, original, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(sentinel, filepath.Join(dir, "logo.png")); err != nil {
+		t.Fatal(err)
+	}
+
+	s := New(root)
+	if _, err := s.Write(9, Logo, bytes.NewReader(largePNG(t, 3, 3)), 1<<20); err == nil {
+		t.Fatal("write accepted existing file symlink")
+	}
+	if _, err := s.Read(9, Logo); err == nil {
+		t.Fatal("read accepted existing file symlink")
+	}
+	if err := s.Remove(9, Logo); err == nil {
+		t.Fatal("remove accepted existing file symlink")
+	}
+	if _, err := s.Walk(); err == nil {
+		t.Fatal("walk accepted existing file symlink")
+	}
+	got, err := os.ReadFile(sentinel)
+	if err != nil || !bytes.Equal(got, original) {
+		t.Fatalf("outside sentinel changed: %v", err)
+	}
+}
+
 func testImage(w, h int) image.Image {
 	m := image.NewRGBA(image.Rect(0, 0, w, h))
 	m.Set(0, 0, color.White)
