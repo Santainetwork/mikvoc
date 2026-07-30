@@ -374,7 +374,6 @@ func TestRestoreRejectSymlinks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
 	}
 }
 
