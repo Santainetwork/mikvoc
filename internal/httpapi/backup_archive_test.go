@@ -375,8 +375,6 @@ func TestRestoreRejectSymlinks(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tmpDir)
-		Name:   "legitimate.txt",
-		Method: zip.Store,
 	}
 }
 
