@@ -384,12 +384,6 @@ func TestRestoreRejectSymlinks(t *testing.T) {
 		Name:   "legitimate.txt",
 		Method: zip.Store,
 	}
-		t.Logf("Restore allowed suspicious entry (may be acceptable if ZIP library sanitizes)")
-	} else if strings.Contains(err.Error(), "symlink") || strings.Contains(err.Error(), "traversal") || strings.Contains(err.Error(), "non-regular") {
-		t.Logf("Restore correctly rejected: %v", err)
-	} else {
-		t.Logf("Restore failed with: %v", err)
-	}
 }
 
 // TestRestoreRejectTraversal - Reject path traversal attacks
