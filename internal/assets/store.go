@@ -2,7 +2,6 @@ package assets
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"image"
 	_ "image/gif"
@@ -12,27 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-)
-
-const (
-	// File size limits
-	maxLogoSize      = 1 << 20       // 1 MB for logos
-	maxBackgroundSize = 5 << 20       // 5 MB for backgrounds
-	
-	// Image dimension limits
-	maxImageWidth   = 4096
-	maxImageHeight  = 4096
-	maxTotalPixels  = 16 * 1000000 // 16 megapixels
-	
-	// Magic bytes constants
-	pngSignature = "\x89PNG\r\n\x1a\n"
-	jpegSOI      = "\xFF\xD8"
-	jpegEOI      = "\xFF\xD9"
-	gif87a       = "GIF87a"
-	gif89a       = "GIF89a"
-	
-	// Virus scanning endpoint stub
-	clamAVDefaultEndpoint = "unix:///var/run/clamav/clamd.sock"
 )
 
 type Kind string
@@ -50,102 +28,34 @@ type Asset struct {
 	Bytes    []byte
 }
 
-type Store struct {
-	root         string
-	virusScanner VirusScanner
-}
-
-// VirusScanner interface for integrating with different antivirus solutions.
-type VirusScanner interface {
-	Scan(data []byte) (bool, error) // Returns isClean, error
-}
-
-// ClamAVScanner stub implementation for clamd integration.
-type ClamAVScanner struct {
-	endpoint string
-}
-
-func NewClamAVScanner(endpoint string) *ClamAVScanner {
-	if endpoint == "" {
-		endpoint = clamAVDefaultEndpoint
-	}
-	return &ClamAVScanner{endpoint: endpoint}
-}
-
-// Scan performs virus scan (stub - returns clean without actual network call).
-func (s *ClamAVScanner) Scan(data []byte) (bool, error) {
-	// TODO: Implement actual ClamAV socket connection
-	// This is a stub for future integration
-	return true, nil
-}
+type Store struct{ root string }
 
 func New(root string) *Store { return &Store{root: filepath.Clean(root)} }
 
-func NewWithVirusScanner(root string, scanner VirusScanner) *Store {
-	return &Store{root: filepath.Clean(root), virusScanner: scanner}
-}
-
 func (s *Store) Root() string { return s.root }
 
-// SetVirusScanner allows setting custom scanner implementation.
-func (s *Store) SetVirusScanner(scanner VirusScanner) {
-	s.virusScanner = scanner
-}
-
-// Write implements enhanced file upload security.
 func (s *Store) Write(routerID int, kind Kind, r io.Reader, maxBytes int64) (Asset, error) {
 	if routerID < 0 || !validKind(kind) || maxBytes <= 0 {
 		return Asset{}, fmt.Errorf("invalid asset scope")
 	}
-	
-	// Enforce size limits based on asset type
-	limit := int64(maxLogoSize)
+	limit := int64(1 << 20)
 	if kind == Background {
-		limit = int64(maxBackgroundSize)
+		limit = 5 << 20
 	}
 	if maxBytes > limit {
 		maxBytes = limit
 	}
-	
-	// Read only up to maxBytes+1 to enforce limit early
-	limitReader := io.LimitReader(r, maxBytes+1)
-	data := make([]byte, 0, maxBytes+1)
-	chunk := make([]byte, 32*1024) // 32KB chunks for efficiency
-	for {
-		n, err := limitReader.Read(chunk)
-		if n > 0 {
-			data = append(data, chunk[:n]...)
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil && err != io.EOF {
-			return Asset{}, fmt.Errorf("failed to read asset: %w", err)
-		}
-	}
-	
-	// Check if we exceeded the limit
-	if int64(len(data)) > maxBytes {
-		return Asset{}, fmt.Errorf("asset exceeds byte limit of %d bytes", maxBytes)
-	}
-	
-	// Perform file signature validation (magic bytes inspection)
-	ext, err := s.validateFileSignatureAndContent(data)
+	data, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
 	if err != nil {
 		return Asset{}, err
 	}
-	
-	// Optional: Virus scan
-	if s.virusScanner != nil {
-		isClean, scanErr := s.virusScanner.Scan(data)
-		if scanErr != nil {
-			// Log but don't block on scan errors in strict mode would be better
-			// For now, treat as clean but log warning
-		} else if !isClean {
-			return Asset{}, fmt.Errorf("virus detected in uploaded file")
-		}
+	if int64(len(data)) > maxBytes {
+		return Asset{}, fmt.Errorf("asset exceeds byte limit")
 	}
-	
+	ext, err := validate(data)
+	if err != nil {
+		return Asset{}, err
+	}
 	dir := s.dir(routerID)
 	if err := s.ensureDirs(dir); err != nil {
 		return Asset{}, err
@@ -153,14 +63,12 @@ func (s *Store) Write(routerID int, kind Kind, r io.Reader, maxBytes int64) (Ass
 	if err := s.rejectEntry(dir); err != nil {
 		return Asset{}, err
 	}
-	
 	tmp, err := os.CreateTemp(dir, ".asset-")
 	if err != nil {
 		return Asset{}, err
 	}
 	tmpName := tmp.Name()
 	defer os.Remove(tmpName)
-	
 	if err = tmp.Chmod(0600); err == nil {
 		_, err = tmp.Write(data)
 	}
@@ -173,7 +81,6 @@ func (s *Store) Write(routerID int, kind Kind, r io.Reader, maxBytes int64) (Ass
 	if err != nil {
 		return Asset{}, err
 	}
-	
 	newPath := filepath.Join(dir, string(kind)+ext)
 	if !contained(s.root, newPath) {
 		return Asset{}, fmt.Errorf("path escapes store")
@@ -183,187 +90,15 @@ func (s *Store) Write(routerID int, kind Kind, r io.Reader, maxBytes int64) (Ass
 	} else if statErr != nil && !os.IsNotExist(statErr) {
 		return Asset{}, statErr
 	}
-	
 	if err = os.Rename(tmpName, newPath); err != nil {
 		return Asset{}, err
 	}
-	
-	// Clean up old files of different types
 	for _, old := range []string{".png", ".jpg", ".gif"} {
 		if old != ext {
 			_ = removeRegular(filepath.Join(dir, string(kind)+old))
 		}
 	}
-	
 	return Asset{RouterID: routerID, Kind: kind, Ext: ext, Bytes: data}, nil
-}
-
-// validateFileSignatureAndContent performs deep file validation.
-func (s *Store) validateFileSignatureAndContent(data []byte) (string, error) {
-	if len(data) < 2 {
-		return "", fmt.Errorf("file too small")
-	}
-	
-	// Check file signature (magic bytes)
-	fileType, err := s.detectFileType(data)
-	if err != nil {
-		return "", err
-	}
-	
-	// Validate content structure based on file type
-	switch fileType {
-	case "png":
-		if err := s.validatePNG(data); err != nil {
-			return "", err
-		}
-		return ".png", nil
-	case "jpeg":
-		if err := s.validateJPEG(data); err != nil {
-			return "", err
-		}
-		return ".jpg", nil
-	case "gif":
-		if err := s.validateGIF(data); err != nil {
-			return "", err
-		}
-		return ".gif", nil
-	default:
-		return "", fmt.Errorf("unsupported or invalid file format: %s", fileType)
-	}
-}
-
-// detectFileType identifies file type by magic bytes.
-func (s *Store) detectFileType(data []byte) (string, error) {
-	// PNG: \x89PNG\r\n\x1a\n
-	if len(data) >= 8 && string(data[:8]) == pngSignature {
-		return "png", nil
-	}
-	
-	// JPEG: \xFF\xD8
-	if len(data) >= 2 && string(data[:2]) == jpegSOI {
-		return "jpeg", nil
-	}
-	
-	// GIF: GIF87a or GIF89a
-	if len(data) >= 6 {
-		header := string(data[:6])
-		if header == gif87a || header == gif89a {
-			return "gif", nil
-		}
-	}
-	
-	return "", fmt.Errorf("unknown file format, no valid magic bytes found")
-}
-
-// validatePNG validates PNG file structure including IHDR chunk.
-func (s *Store) validatePNG(data []byte) error {
-	if len(data) < 33 { // Minimum valid PNG size
-		return fmt.Errorf("PNG file too small")
-	}
-	
-	// Verify PNG signature
-	if string(data[:8]) != pngSignature {
-		return fmt.Errorf("invalid PNG signature")
-	}
-	
-	// Parse IHDR chunk (must be first chunk after signature)
-	// Structure: length(4) + type(4) + data(length) + CRC(4)
-	// IHDR is at offset 12 (8 bytes signature + 4 bytes length)
-	if len(data) < 24 {
-		return fmt.Errorf("insufficient data for IHDR chunk")
-	}
-	
-	ihdrTypeOffset := 12 // After signature (8) + length (4)
-	if string(data[ihdrTypeOffset:ihdrTypeOffset+4]) != "IHDR" {
-		return fmt.Errorf("first chunk is not IHDR")
-	}
-	
-	// Extract width and height (big-endian, 4 bytes each)
-	width := int(binary.BigEndian.Uint32(data[ihdrTypeOffset+4 : ihdrTypeOffset+8]))
-	height := int(binary.BigEndian.Uint32(data[ihdrTypeOffset+8 : ihdrTypeOffset+12]))
-	
-	// Validate dimensions
-	if width <= 0 || height <= 0 {
-		return fmt.Errorf("invalid image dimensions")
-	}
-	if width > maxImageWidth || height > maxImageHeight {
-		return fmt.Errorf("image dimensions exceed limit (%dx%d > %dx%d)", width, height, maxImageWidth, maxImageHeight)
-	}
-	if int64(width)*int64(height) > maxTotalPixels {
-		return fmt.Errorf("image exceeds total pixel limit (%d > %d)", width*height, maxTotalPixels)
-	}
-	
-	// Verify bit depth and color type
-	bitDepth := data[ihdrTypeOffset+12]
-	colorType := data[ihdrTypeOffset+13]
-	
-	if bitDepth != 1 && bitDepth != 2 && bitDepth != 4 && bitDepth != 8 && bitDepth != 16 {
-		return fmt.Errorf("invalid PNG bit depth: %d", bitDepth)
-	}
-	if colorType > 6 {
-		return fmt.Errorf("invalid PNG color type: %d", colorType)
-	}
-	
-	return nil
-}
-
-// validateJPEG validates JPEG file structure including SOI/EOI markers.
-func (s *Store) validateJPEG(data []byte) error {
-	if len(data) < 2 {
-		return fmt.Errorf("JPEG file too small")
-	}
-	
-	// Verify Start Of Image marker
-	if string(data[:2]) != jpegSOI {
-		return fmt.Errorf("invalid JPEG SOI marker")
-	}
-	
-	// Validate via standard library as fallback for remaining checks
-	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil {
-		return fmt.Errorf("invalid JPEG: %w", err)
-	}
-	
-	if cfg.Width <= 0 || cfg.Height <= 0 {
-		return fmt.Errorf("invalid JPEG dimensions")
-	}
-	if cfg.Width > maxImageWidth || cfg.Height > maxImageHeight {
-		return fmt.Errorf("JPEG dimensions exceed limit (%dx%d)", cfg.Width, cfg.Height)
-	}
-	if int64(cfg.Width)*int64(cfg.Height) > maxTotalPixels {
-		return fmt.Errorf("JPEG exceeds total pixel limit")
-	}
-	
-	return nil
-}
-
-// validateGIF validates GIF file structure.
-func (s *Store) validateGIF(data []byte) error {
-	if len(data) < 13 {
-		return fmt.Errorf("GIF file too small")
-	}
-	
-	// Verify GIF header
-	header := string(data[:6])
-	if header != gif87a && header != gif89a {
-		return fmt.Errorf("invalid GIF header: %s", header)
-	}
-	
-	// Decode dimensions from GIF (little-endian)
-	width := int(binary.LittleEndian.Uint16(data[6:8]))
-	height := int(binary.LittleEndian.Uint16(data[8:10]))
-	
-	if width <= 0 || height <= 0 {
-		return fmt.Errorf("invalid GIF dimensions")
-	}
-	if width > maxImageWidth || height > maxImageHeight {
-		return fmt.Errorf("GIF dimensions exceed limit (%dx%d)", width, height)
-	}
-	if int64(width)*int64(height) > maxTotalPixels {
-		return fmt.Errorf("GIF exceeds total pixel limit")
-	}
-	
-	return nil
 }
 
 func (s *Store) Read(routerID int, kind Kind) (Asset, error) {
@@ -558,6 +293,22 @@ func removeRegular(p string) error {
 		return fmt.Errorf("asset is not regular")
 	}
 	return os.Remove(p)
+}
+func validate(b []byte) (string, error) {
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(b))
+	if err != nil || (format != "png" && format != "jpeg" && format != "gif") {
+		return "", fmt.Errorf("invalid image")
+	}
+	if cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width > 4096 || cfg.Height > 4096 || int64(cfg.Width)*int64(cfg.Height) > 16000000 {
+		return "", fmt.Errorf("image dimensions exceed limit")
+	}
+	if _, _, err := image.Decode(bytes.NewReader(b)); err != nil {
+		return "", fmt.Errorf("invalid image")
+	}
+	if format == "jpeg" {
+		return ".jpg", nil
+	}
+	return "." + format, nil
 }
 
 func validateAncestors(root, p string) error {
