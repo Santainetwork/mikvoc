@@ -125,8 +125,15 @@ func main() {
 
 	app.RegisterRoutes(r)
 
-	addr := fmt.Sprintf(":%d", *port)
-	log.Printf("MikVoc starting on http://localhost%s", addr)
+	bindAddr := envStr("MIKVOC_BIND_ADDR", "0.0.0.0")
+	addr := fmt.Sprintf("%s:%d", bindAddr, *port)
+	host := bindAddr
+	if bindAddr == "127.0.0.1" {
+		host = "localhost (private)"
+	} else if bindAddr == "0.0.0.0" {
+		host = "all interfaces (0.0.0.0)"
+	}
+	log.Printf("MikVoc starting on http://%s%s", host, addr)
 	if err := http.ListenAndServe(addr, r); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
