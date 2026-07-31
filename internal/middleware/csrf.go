@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -102,8 +103,8 @@ func setCSRFCookie(w http.ResponseWriter, r *http.Request, token string) {
 		Value:    token,
 		Path:     "/",
 		MaxAge:   86400 * 7,
-		HttpOnly: false,
-		SameSite: http.SameSiteLaxMode,
+		HttpOnly: true, // Changed from false to true for security
+		SameSite: http.SameSiteStrictMode, // Changed from Lax to Strict for security
 		Secure:   secure,
 	})
 }
@@ -191,14 +192,26 @@ func writeCSRFError(w http.ResponseWriter, r *http.Request) {
 		strings.EqualFold(xrw, "XMLHttpRequest") {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte(`{"ok":false,"message":"CSRF token invalid atau kedaluwarsa. Muat ulang halaman."}`))
+		_, _ = w.Write([]byte(`{"ok":false,"message":"CSRF token invalid or expired. Reload page and try again."}`))
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusForbidden)
 	_, _ = w.Write([]byte(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>CSRF</title></head><body style="font-family:system-ui;padding:2rem">
 <h1>403 — CSRF token invalid</h1>
-<p>Token keamanan tidak cocok atau kedaluwarsa. <a href="javascript:location.reload()">Muat ulang halaman</a> lalu coba lagi.</p>
-<p><a href="/">Kembali</a></p>
+<p>The security token does not match or has expired. <a href="javascript:location.reload()">Reload page</a> and try again.</p>
+<p><a href="/">Back</a></p>
 </body></html>`))
+}
+
+// GetCSRFTokenHandler returns a new or existing CSRF token without requiring authentication.
+// This allows frontend to fetch the token before submitting forms.
+func GetCSRFTokenHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := EnsureCSRFToken(w, r)
+		
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(fmt.Sprintf(`{"csrf_token":%q}`, token)))
+	})
 }
