@@ -1,0 +1,23 @@
+[Unit]
+Description=MikVoc Hotspot Manager v2.0
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/mikvoc/mikvoc
+ExecStart=/root/mikvoc/mikvoc/mikvoc --port 8080 --db /var/lib/mikvoc/db.sqlite
+Restart=always
+RestartSec=10
+Environment="MIKVOC_PORT=8080"
+Environment="MIKVOC_DB=/var/lib/mikvoc/db.sqlite"
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/mikvoc
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
