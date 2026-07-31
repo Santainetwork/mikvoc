@@ -11,6 +11,8 @@ import (
 
 var DB *sql.DB
 
+var Path string
+
 var routerCipher *crypt.Cipher
 
 // Init opens (or creates) the SQLite database and runs migrations.
@@ -21,6 +23,7 @@ func Init(path string, secrets ...string) error {
 		return fmt.Errorf("open db: %w", err)
 	}
 	DB = db
+	Path = path
 	secret := ""
 	if len(secrets) > 0 {
 		secret = secrets[0]
